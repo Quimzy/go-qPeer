@@ -1,5 +1,5 @@
 # go-qPeer
 
-Forget python, Go for the win (for distributed systems)
+<b>Forget python, Go for the win (for distributed systems)</b>
 
 *Under development...*
