@@ -2,7 +2,9 @@
 package main
 
 import ("encoding/json"
-	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 )
 
 type RSA_keys struct {
@@ -38,3 +40,24 @@ type Peerinfo struct
 	Port int 
 	RSA_Pubkey string
 }
+
+
+func read_lpeer() Lpeer {
+	reader, err := ioutil.ReadFile("lpeer.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var lpeer Lpeer
+	json.Unmarshal([]byte(reader), &lpeer)
+	return lpeer
+}
+
+func getmyip() string {
+	req, err := http.Get("https://api.ipify.org")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ip, _ := ioutil.ReadAll(req.Body)
+	return string(ip)
+}
+
