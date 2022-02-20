@@ -3,17 +3,21 @@ package main
 
 import ("encoding/json"
 	"io/ioutil"
+	"time"
 	"log"
 	"fmt"
+	"os"
+	random "math/rand"
 	"net/http"
+    "crypto"
 	"crypto/sha1"
+	"crypto/md5"
 	"crypto/rsa"
 	"crypto/rand"
-	"os"
 	"crypto/x509"
     "encoding/pem"
-    "crypto"
-
+	"crypto/aes"
+	"crypto/cipher"
 )
 
 type RSA_Keys struct {
@@ -38,7 +42,6 @@ type Peer struct
 {
 	Peerid string `json:"peerid"`
 	Peerinfo []Peerinfo `json:"peerinfo"`
-	AES_iv int `json:"iv"`
 	AES_key string `json:"key"`
 }
 
@@ -56,6 +59,20 @@ func sha1_encrypt(msg string) string {
 	h := sha1.New()
 	h.Write([]byte(msg))
 	return string(fmt.Sprintf("%x", h.Sum(nil)))
+}
+
+func md5_encrypt(msg string) string {
+    return string(fmt.Sprintf("%x", md5.Sum([]byte(msg))))
+}
+
+func randomString(length int) string {
+	random.Seed(time.Now().UnixNano())
+	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+	s := make([]byte, 0, length)
+	for i := 0; i < length; i++ {
+		s = append(s, alphabet[random.Intn(len(alphabet))])
+	}
+	return string(s)
 }
 // Peer setup
 
@@ -213,4 +230,53 @@ func RSA_decrypt(enc_msg string, privkey *rsa.PrivateKey) string {
 	}
 	return string(msg)
 }
+
+func AES_keygen() string {
+	key := md5_encrypt(randomString(32))
+	return key
+}
+
+func AES_encrypt(msg string, key string) string {
+	c, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+
+	enc_msg := gcm.Seal(nonce, nonce, []byte(msg), nil)
+	return string(enc_msg)
+}
+
+func AES_decrypt(enc_msg string, key string) string {
+	c, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(enc_msg) < nonceSize {
+		log.Fatal(err)
+	}
+
+	nonce, enc_msg := enc_msg[:nonceSize], enc_msg[nonceSize:]
+	
+	msg, err := gcm.Open(nil, []byte(nonce), []byte(enc_msg), nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+	return string(msg)
+}
+
 
