@@ -279,4 +279,18 @@ func AES_decrypt(enc_msg string, key string) string {
 	return string(msg)
 }
 
+// MsgTypes
+
+type Qpeer struct 
+{
+	msgtype string `json:"msgtype"`
+	peerid string `json:"peerid"`
+}
+
+type Init struct
+{
+	peerid string `json:"peerid"`
+	pubkey_pem string `json:"pubkey"`
+}
+
 
