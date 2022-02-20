@@ -12,12 +12,13 @@ import ("encoding/json"
 	"os"
 	"crypto/x509"
     "encoding/pem"
+    "crypto"
 
 )
 
 type RSA_Keys struct {
-	RSA_Privkey string
-	RSA_Pubkey string
+	RSA_Privkey string `json:"privkey"`
+	RSA_Pubkey string `json:"pubkey"`
 }
 
 type Lpeer struct
@@ -49,6 +50,15 @@ type Peerinfo struct
 	RSA_Pubkey string
 }
 
+// Basic functions
+
+func sha1_encrypt(msg string) string {
+	h := sha1.New()
+	h.Write([]byte(msg))
+	return string(fmt.Sprintf("%x", h.Sum(nil)))
+}
+// Peer setup
+
 func getmyip() string {
 	req, err := http.Get("https://api.ipify.org")
 	if err != nil {
@@ -58,6 +68,7 @@ func getmyip() string {
 	return string(ip)
 }
 
+
 func RSA_keygen() (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pubkey := &privkey.PublicKey
@@ -65,7 +76,7 @@ func RSA_keygen() (*rsa.PrivateKey, *rsa.PublicKey) {
 	return privkey, pubkey
 }
 
-func RSA_ExportKey(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
+func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
 	var keys RSA_Keys
 
 	privkey_bytes := x509.MarshalPKCS1PrivateKey(privkey)
@@ -90,6 +101,52 @@ func RSA_ExportKey(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
     return keys
 }
 
+func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey) {
+	dec_privkey, _ := pem.Decode([]byte(privkey_pem))
+	privkey, _ := x509.ParsePKCS1PrivateKey(dec_privkey.Bytes)
+
+	dec_pubkey, _ := pem.Decode([]byte(pubkey_pem))
+	pubkey, err := x509.ParsePKIXPublicKey(dec_pubkey.Bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+    return privkey, pubkey.(*rsa.PublicKey)
+}
+
+func RSA_Writekeys(keys RSA_Keys) {
+	jsonized_keys, err := json.MarshalIndent(keys, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = ioutil.WriteFile("keys.json", jsonized_keys, 0664)
+}
+
+func RSA_Readkeys() RSA_Keys {
+	reader, err := ioutil.ReadFile("keys.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var keys RSA_Keys
+	json.Unmarshal([]byte(reader), &keys)
+
+	return keys
+}
+
+func set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey) {
+	if _, err := os.Stat("keys.json"); err == nil{
+		var keys RSA_Keys
+		keys = RSA_Readkeys()
+		return RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
+	} else {
+		var keys RSA_Keys
+		privkey, pubkey := RSA_keygen()
+		keys = RSA_ExportKeys(privkey, pubkey)
+		RSA_Writekeys(keys)
+		return privkey, pubkey
+	}
+
+}
+
 func read_lpeer() Lpeer {
 	reader, err := ioutil.ReadFile("lpeer.json")
 	if err != nil {
@@ -100,34 +157,60 @@ func read_lpeer() Lpeer {
 	return lpeer
 }
 
-func set_lpeer(pubkey_pem string) Lpeer {
-	if _, err := os.Stat("lpeer.json"); err == nil{
-		var lpeer Lpeer
-		lpeer = read_lpeer()
-		if lpeer.Peerip != getmyip() {
-			lpeer.Peerip = getmyip()
-		}
-		return lpeer
-	} else{
-		var lpeer Lpeer
-
-		h := sha1.New()
-		h.Write([]byte(pubkey_pem))
-		lpeer.Peerid = string(fmt.Sprintf("%x", h.Sum(nil)))
-
-		lpeer.Role = 0
-		lpeer.Peerip = getmyip()
-		lpeer.Port = 1691
-		write_lpeer(lpeer)
-		return lpeer
-	}
-}
-
 func write_lpeer(lpeer Lpeer) {
 	jsonized_lpeer, err := json.Marshal(lpeer)
 	if err != nil {
 		log.Fatal(err)
 	}
 	_  = ioutil.WriteFile("lpeer.json", jsonized_lpeer, 0664)
+}
+
+func set_lpeer(pubkey_pem string) Lpeer {
+	if _, err := os.Stat("lpeer.json"); err == nil{
+		var lpeer Lpeer
+		lpeer = read_lpeer()
+		if lpeer.Peerip != getmyip() { //If public ip has changed
+			lpeer.Peerip = getmyip()
+		}
+		return lpeer
+	} else{
+		var lpeer Lpeer
+
+		//Generating Peerid
+		
+		lpeer.Peerid = sha1_encrypt(pubkey_pem)
+
+		//Setting the rest of the variables
+		lpeer.Role = 0
+		lpeer.Peerip = getmyip()
+		lpeer.Port = 1691
+
+		write_lpeer(lpeer)
+		return lpeer
+	}
+}
+
+// Encryption Functions
+
+func RSA_encrypt(msg string, pubkey *rsa.PublicKey) string {
+	enc_msg, err := rsa.EncryptOAEP(
+		sha1.New(),
+		rand.Reader,
+		pubkey,
+		[]byte(msg),
+		nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return string(enc_msg)
+}
+
+func RSA_decrypt(enc_msg string, privkey *rsa.PrivateKey) string {
+	msg, err := privkey.Decrypt(nil, []byte(enc_msg), &rsa.OAEPOptions{Hash: crypto.SHA1})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(msg)
 }
 
