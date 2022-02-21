@@ -18,6 +18,7 @@ import ("encoding/json"
     "encoding/pem"
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/base64"
 )
 
 type RSA_Keys struct {
@@ -43,6 +44,7 @@ type Peer struct
 	Peerid string `json:"peerid"`
 	Peerinfo []Peerinfo `json:"peerinfo"`
 	AES_key string `json:"key"`
+	Stauts int `json:"status"`
 }
 
 type Peerinfo struct
@@ -51,6 +53,20 @@ type Peerinfo struct
 	Peerip string 
 	Port int 
 	RSA_Pubkey string
+}
+
+// MsgTypes
+
+type Qpeer struct 
+{
+	msgtype string `json:"msgtype"`
+	peerid string `json:"peerid"`
+}
+
+type Init struct
+{
+	peerid string `json:"peerid"`
+	pubkey_pem string `json:"pubkey"`
 }
 
 // Basic functions
@@ -74,6 +90,7 @@ func randomString(length int) string {
 	}
 	return string(s)
 }
+
 // Peer setup
 
 func getmyip() string {
@@ -93,41 +110,60 @@ func RSA_keygen() (*rsa.PrivateKey, *rsa.PublicKey) {
 	return privkey, pubkey
 }
 
-func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
-	var keys RSA_Keys
-
+func RSA_ExportPrivkey(privkey *rsa.PrivateKey) string {
 	privkey_bytes := x509.MarshalPKCS1PrivateKey(privkey)
-    keys.RSA_Privkey = string(pem.EncodeToMemory(
+    RSA_Privkey := string(pem.EncodeToMemory(
             &pem.Block{
                     Type:  "RSA PRIVATE KEY",
                     Bytes: privkey_bytes,
             },
     ))
 
-    pubkey_bytes, err := x509.MarshalPKIXPublicKey(pubkey)
-    if err != nil {
-            log.Fatal(err)
-    }
-    keys.RSA_Pubkey = string(pem.EncodeToMemory(
-            &pem.Block{
-                    Type:  "RSA PUBLIC KEY",
-                    Bytes: pubkey_bytes,
-            },
-    ))
-
-    return keys
+    return RSA_Privkey
 }
 
-func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey) {
+func RSA_ExportPubkey(pubkey *rsa.PublicKey) string {
+	pubkey_bytes, err := x509.MarshalPKIXPublicKey(pubkey)
+	    if err != nil {
+	            log.Fatal(err)
+	    }
+	RSA_Pubkey := string(pem.EncodeToMemory(
+	        &pem.Block{
+	                Type:  "RSA PUBLIC KEY",
+	                Bytes: pubkey_bytes,
+	        },
+	))
+
+	return RSA_Pubkey
+}
+
+func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
+	var keys RSA_Keys
+	keys.RSA_Privkey = RSA_ExportPrivkey(privkey)
+	keys.RSA_Pubkey = RSA_ExportPubkey(pubkey)
+
+	return keys
+}
+
+func RSA_ImportPrivkey(privkey_pem string) *rsa.PrivateKey {
 	dec_privkey, _ := pem.Decode([]byte(privkey_pem))
 	privkey, _ := x509.ParsePKCS1PrivateKey(dec_privkey.Bytes)
 
+	return privkey
+	
+}
+
+func RSA_ImportPubkey(pubkey_pem string) *rsa.PublicKey {
 	dec_pubkey, _ := pem.Decode([]byte(pubkey_pem))
 	pubkey, err := x509.ParsePKIXPublicKey(dec_pubkey.Bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
-    return privkey, pubkey.(*rsa.PublicKey)
+    return pubkey.(*rsa.PublicKey)
+}
+
+func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey) {
+	return RSA_ImportPrivkey(privkey_pem), RSA_ImportPubkey(pubkey_pem)
 }
 
 func RSA_Writekeys(keys RSA_Keys) {
@@ -188,6 +224,7 @@ func set_lpeer(pubkey_pem string) Lpeer {
 		lpeer = read_lpeer()
 		if lpeer.Peerip != getmyip() { //If public ip has changed
 			lpeer.Peerip = getmyip()
+			write_lpeer(lpeer)
 		}
 		return lpeer
 	} else{
@@ -279,18 +316,23 @@ func AES_decrypt(enc_msg string, key string) string {
 	return string(msg)
 }
 
-// MsgTypes
+func penc_AES(AES_key string, pubkey *rsa.PublicKey) string { // Public Key encryption for AES_key
+	enc_AES_key := base64.StdEncoding.EncodeToString([]byte(RSA_encrypt(AES_key, pubkey)))
 
-type Qpeer struct 
-{
-	msgtype string `json:"msgtype"`
-	peerid string `json:"peerid"`
+	return enc_AES_key
 }
 
-type Init struct
-{
-	peerid string `json:"peerid"`
-	pubkey_pem string `json:"pubkey"`
+func dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) string {
+	b64dec_AES_key, err := base64.StdEncoding.DecodeString(enc_AES_key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	AES_key := RSA_decrypt(string(b64dec_AES_key), privkey)
+
+	return AES_key
 }
+
+
+//
 
 
