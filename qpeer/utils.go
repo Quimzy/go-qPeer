@@ -42,7 +42,7 @@ type Peers struct
 type Peer struct
 {
 	Peerid string `json:"peerid"`
-	Peerinfo []Peerinfo `json:"peerinfo"`
+	Peerinfo string `json:"peerinfo"`
 	AES_key string `json:"key"`
 	Stauts int `json:"status"`
 }
@@ -53,20 +53,6 @@ type Peerinfo struct
 	Peerip string 
 	Port int 
 	RSA_Pubkey string
-}
-
-// MsgTypes
-
-type Qpeer struct 
-{
-	msgtype string `json:"msgtype"`
-	peerid string `json:"peerid"`
-}
-
-type Init struct
-{
-	peerid string `json:"peerid"`
-	pubkey_pem string `json:"pubkey"`
 }
 
 // Basic functions
@@ -167,11 +153,11 @@ func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rs
 }
 
 func RSA_Writekeys(keys RSA_Keys) {
-	jsonized_keys, err := json.MarshalIndent(keys, "", " ")
+	jsonified_keys, err := json.MarshalIndent(keys, "", " ")
 	if err != nil {
 		log.Fatal(err)
 	}
-	_ = ioutil.WriteFile("keys.json", jsonized_keys, 0664)
+	_ = ioutil.WriteFile("keys.json", jsonified_keys, 0664)
 }
 
 func RSA_Readkeys() RSA_Keys {
@@ -211,11 +197,11 @@ func read_lpeer() Lpeer {
 }
 
 func write_lpeer(lpeer Lpeer) {
-	jsonized_lpeer, err := json.Marshal(lpeer)
+	jsonified_lpeer, err := json.Marshal(lpeer)
 	if err != nil {
 		log.Fatal(err)
 	}
-	_  = ioutil.WriteFile("lpeer.json", jsonized_lpeer, 0664)
+	_  = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 }
 
 func set_lpeer(pubkey_pem string) Lpeer {
@@ -332,7 +318,85 @@ func dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) string {
 	return AES_key
 }
 
+// MsgTypes
 
-//
+type Qpeer struct 
+{
+	msgtype string `json:"msgtype"`
+	peerid string `json:"peerid"`
+}
 
+type Init struct
+{
+	peerid string `json:"peerid"`
+	pubkey_pem string `json:"pubkey"`
+}
+
+func qpeer(peerid string) Qpeer {
+	qpeer_msg := Qpeer{"qpeer", peerid}
+
+	return qpeer_msg
+} 
+
+func exchange_peers(peerid string) Qpeer {
+	exchange_peers_msg := Qpeer{"exchange_peers", peerid}
+
+	return exchange_peers_msg
+}
+
+func init_enc(peerid string, pubkey_pem string) Init {
+	init_msg := Init{peerid, pubkey_pem}
+
+	return init_msg
+}
+
+// Exchanging peerinfo
+
+func peerinfo(role int, peerip string, port int, pubkey_pem string) Peerinfo {
+	peerinfo := Peerinfo{role, peerip, port, pubkey_pem}
+
+	return peerinfo
+}
+func kenc_peerinfo(peerinfo Peerinfo, AES_key string) string { //Key Encryption (AES)
+	jsonified_peerinfo, err := json.Marshal(peerinfo) //From struct to a string
+	if err != nil {
+		log.Fatal(err)
+	}
+	kenc_peerinfo := AES_encrypt(string(jsonified_peerinfo), AES_key) //Encrypting peerinfo with Key
+
+	return base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo))
+}
+
+func dkenc_peerinfo(kenc_peerinfo string, AES_key string) Peerinfo { // Decrypt Key Encryption (AES)
+	b64dec_peerinfo, _ := base64.StdEncoding.DecodeString(kenc_peerinfo) //Decoding base64
+	kdec_peerinfo := AES_decrypt(string(b64dec_peerinfo), AES_key) //Decrypting peerinfo with Key
+	
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(kdec_peerinfo), &peerinfo)
+
+	return peerinfo
+}
+
+// Saving peer
+
+func save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey) Peer {
+	jsonified_kenc_peerinfo, _ := json.Marshal(peerinfo)
+	kenc_peerinfo := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
+	penc_key := RSA_encrypt(AES_key, pubkey)
+	var peer Peer
+	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), penc_key, 1}
+
+	write_peer(peer)
+	return peer
+}
+
+func write_peer(peer Peer) {
+	
+	jsonified_peer, err := json.Marshal(peer)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_  = ioutil.WriteFile("peers.json", jsonified_peer, 0664)
+
+}
 
