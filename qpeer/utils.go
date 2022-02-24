@@ -34,10 +34,6 @@ type Lpeer struct
 	Port int `json:"port"`
 }
 
-type Peers struct
-{
-	Peers []Peer `json:"peers"`
-}
 
 type Peer struct
 {
@@ -75,6 +71,16 @@ func randomString(length int) string {
 		s = append(s, alphabet[random.Intn(len(alphabet))])
 	}
 	return string(s)
+}
+
+func check_peer(peers []Peer, peer Peer) bool {
+	for _, n_peer := range peers{
+		if n_peer.Peerid == peer.Peerid {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Peer setup
@@ -385,18 +391,68 @@ func save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 	penc_key := RSA_encrypt(AES_key, pubkey)
 	var peer Peer
 	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), penc_key, 1}
-
-	write_peer(peer)
+	
 	return peer
+	
 }
 
-func write_peer(peer Peer) {
-	
-	jsonified_peer, err := json.Marshal(peer)
+func write_peers(peer Peer) {
+	if _, err := os.Stat("peers.json"); err == nil{		
+		//var all_peers All_Peers
+		all_peers := read_peers()
+		all_peers= append(all_peers, peer)
+		jsonified_peers, err := json.Marshal(all_peers)
+		
+		if err != nil{
+			log.Fatal(err)
+		}
+
+		_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
+
+	}else {
+		var all_peers []Peer
+		all_peers = append(all_peers, peer)
+
+		jsonified_peers, err := json.Marshal(all_peers)
+		if err != nil{
+			log.Fatal(err)
+		}
+
+		_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
+
+	}
+}
+
+func read_peers() []Peer {
+	reader, err := ioutil.ReadFile("peers.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	_  = ioutil.WriteFile("peers.json", jsonified_peer, 0664)
-
+	var peers []Peer
+	json.Unmarshal([]byte(reader), &peers)
+	return peers
 }
 
+/*func main() {
+	_, pubkey := set_RSA_Keys()
+	pubkey_pem := RSA_ExportPubkey(pubkey)
+	AES_key := AES_keygen()
+	lpeer := set_lpeer(pubkey_pem)
+	//var peers All_Peers
+	
+	peerinfo := Peerinfo{lpeer.Role, lpeer.Peerip, lpeer.Port, pubkey_pem}
+	
+	peer := save_peer(lpeer.Peerid, peerinfo, AES_key, pubkey)
+	if _, err := os.Stat("peers.json"); err == nil{
+		peers := read_peers()
+		switch check_peer(peers, peer) {
+		case false:
+			write_peers(peer)
+		default:
+		}
+	} else{
+		write_peers(peer)
+	}
+	
+
+}*/
