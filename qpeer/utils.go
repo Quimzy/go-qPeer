@@ -19,6 +19,7 @@ import ("encoding/json"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"strings"
 )
 
 type RSA_Keys struct {
@@ -34,6 +35,11 @@ type Lpeer struct
 	Port int `json:"port"`
 }
 
+type All_peers struct
+{
+	Peers []Peer `json:"peers"`
+	Offline_peers []Peer `json:"offline_peers"`
+}
 
 type Peer struct
 {
@@ -73,10 +79,13 @@ func randomString(length int) string {
 	return string(s)
 }
 
-func check_peer(peers []Peer, peer Peer) bool {
+func check_peer(peerid string, peers []Peer) bool {
 	for _, n_peer := range peers{
-		if n_peer.Peerid == peer.Peerid {
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
 			return true
+			break
+		default:
 		}
 	}
 
@@ -324,6 +333,7 @@ func dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) string {
 	return AES_key
 }
 
+
 // MsgTypes
 
 type Qpeer struct 
@@ -390,18 +400,23 @@ func save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 	kenc_peerinfo := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
 	penc_key := RSA_encrypt(AES_key, pubkey)
 	var peer Peer
-	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), penc_key, 1}
+	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key)), 1}
 	
 	return peer
 	
 }
 
-func write_peers(peer Peer) {
+func write_peers(peer Peer, status int) {
 	if _, err := os.Stat("peers.json"); err == nil{		
 		//var all_peers All_Peers
 		all_peers := read_peers()
-		all_peers= append(all_peers, peer)
-		jsonified_peers, err := json.Marshal(all_peers)
+		switch status{
+		case 1:
+			all_peers.Peers = append(all_peers.Peers, peer)
+		case 0:
+			all_peers.Offline_peers = append(all_peers.Offline_peers, peer)
+		}
+		jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
 		
 		if err != nil{
 			log.Fatal(err)
@@ -410,10 +425,9 @@ func write_peers(peer Peer) {
 		_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
 
 	}else {
-		var all_peers []Peer
-		all_peers = append(all_peers, peer)
-
-		jsonified_peers, err := json.Marshal(all_peers)
+		var all_peers All_peers
+		all_peers.Peers = append(all_peers.Peers, peer)
+		jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
 		if err != nil{
 			log.Fatal(err)
 		}
@@ -423,36 +437,73 @@ func write_peers(peer Peer) {
 	}
 }
 
-func read_peers() []Peer {
+func read_peers() All_peers {
 	reader, err := ioutil.ReadFile("peers.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	var peers []Peer
+	var peers All_peers
 	json.Unmarshal([]byte(reader), &peers)
 	return peers
 }
 
-/*func main() {
-	_, pubkey := set_RSA_Keys()
-	pubkey_pem := RSA_ExportPubkey(pubkey)
-	AES_key := AES_keygen()
-	lpeer := set_lpeer(pubkey_pem)
-	//var peers All_Peers
-	
-	peerinfo := Peerinfo{lpeer.Role, lpeer.Peerip, lpeer.Port, pubkey_pem}
-	
-	peer := save_peer(lpeer.Peerid, peerinfo, AES_key, pubkey)
-	if _, err := os.Stat("peers.json"); err == nil{
-		peers := read_peers()
-		switch check_peer(peers, peer) {
-		case false:
-			write_peers(peer)
+func find_peer(peerid string, peers []Peer) string{
+	for _, n_peer := range peers{
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
+			jsonified_peer, err := json.Marshal(n_peer)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return string(jsonified_peer)
+			break
 		default:
 		}
-	} else{
-		write_peers(peer)
 	}
-	
+	return ""
 
-}*/
+}
+
+func find_temp_peer(peerid string, temp_peers []Lpeer) string{
+	for _, n_peer := range temp_peers{
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
+			jsonified_peer, err := json.Marshal(n_peer)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return string(jsonified_peer)
+			break
+		default:
+		}
+	}
+	return ""
+
+}
+
+func decrypt_peer(peerid string, privkey *rsa.PrivateKey,peers []Peer) Peer {
+	var peer Peer
+
+	json.Unmarshal([]byte(find_peer(peerid, peers)), &peer)
+
+	peer.AES_key = dpenc_AES(peer.AES_key, privkey)
+	jsonified_peerinfo, err := json.Marshal(dkenc_peerinfo(peer.Peerinfo, peer.AES_key))
+	if err != nil{
+		log.Fatal(err)
+	}
+	peer.Peerinfo = string(jsonified_peerinfo)
+
+	return peer
+
+}
+
+func return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpeer {
+	peer := decrypt_peer(peerid, privkey, peers)
+	
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
+	
+	temp_peer := Lpeer{peer.Peerid, peerinfo.Role, peerinfo.Peerip, peerinfo.Port}
+
+	return temp_peer
+}
