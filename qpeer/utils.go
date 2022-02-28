@@ -549,7 +549,7 @@ func getback_peer(peerid string, all_peers All_peers) All_peers{
 	return all_peers
 }
 
-func return_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
+func return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	var temp_peers []Lpeer
 	
 	if len(peers) <= 5{
@@ -572,4 +572,10 @@ func return_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	return temp_peers
 }
 
+func share_temp_peers(privkey *rsa.PrivateKey, peers []Peer, AES_key string) string {
+	jsonified_temp_peers, _ := json.Marshal(return_temp_peers(privkey, peers))
+	payload := base64.StdEncoding.EncodeToString(AES_encrypt(jsonified_temp_peers, AES_key))
+
+	return payload
+}
 
