@@ -22,7 +22,8 @@ import ("encoding/json"
 	"strings"
 )
 
-type RSA_Keys struct {
+type RSA_Keys struct 
+{
 	RSA_Privkey string `json:"privkey"`
 	RSA_Pubkey string `json:"pubkey"`
 }
@@ -36,7 +37,7 @@ type Lpeer struct
 }
 
 type All_peers struct
-{
+	{
 	Peers []Peer `json:"peers"`
 	Offline_peers []Peer `json:"offline_peers"`
 }
@@ -77,6 +78,15 @@ func randomString(length int) string {
 		s = append(s, alphabet[random.Intn(len(alphabet))])
 	}
 	return string(s)
+}
+
+func index(peers []Peer, peer Peer) int{
+    for i, n_peer := range peers {
+        if n_peer == peer {
+            return i
+        }
+    }
+    return -1
 }
 
 func check_peer(peerid string, peers []Peer) bool {
@@ -333,6 +343,35 @@ func dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) string {
 	return AES_key
 }
 
+func kenc_peerinfo(peerinfo Peerinfo, AES_key string) string { //Key Encryption (AES)
+	jsonified_peerinfo, err := json.Marshal(peerinfo) //From struct to a string
+	if err != nil {
+		log.Fatal(err)
+	}
+	kenc_peerinfo := AES_encrypt(string(jsonified_peerinfo), AES_key) //Encrypting peerinfo with Key
+
+	return base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo))
+}
+
+func dkenc_peerinfo(kenc_peerinfo string, AES_key string) Peerinfo { // Decrypt Key Encryption (AES)
+	b64dec_peerinfo, _ := base64.StdEncoding.DecodeString(kenc_peerinfo) //Decoding base64
+	kdec_peerinfo := AES_decrypt(string(b64dec_peerinfo), AES_key) //Decrypting peerinfo with Key
+	
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(kdec_peerinfo), &peerinfo)
+
+	return peerinfo
+}
+
+func kenc_verify(msg string, key string) string {
+	kenc_verify := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(msg, key)))
+	return kenc_verify
+}
+
+func dkenc_verify(enc_msg string, key string) string{
+	b64dec_verify, _ := base64.StdEncoding.DecodeString(enc_msg)
+	return AES_decrypt(string(b64dec_verify), key)
+}
 
 // MsgTypes
 
@@ -370,25 +409,6 @@ func init_enc(peerid string, pubkey_pem string) Init {
 
 func peerinfo(role int, peerip string, port int, pubkey_pem string) Peerinfo {
 	peerinfo := Peerinfo{role, peerip, port, pubkey_pem}
-
-	return peerinfo
-}
-func kenc_peerinfo(peerinfo Peerinfo, AES_key string) string { //Key Encryption (AES)
-	jsonified_peerinfo, err := json.Marshal(peerinfo) //From struct to a string
-	if err != nil {
-		log.Fatal(err)
-	}
-	kenc_peerinfo := AES_encrypt(string(jsonified_peerinfo), AES_key) //Encrypting peerinfo with Key
-
-	return base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo))
-}
-
-func dkenc_peerinfo(kenc_peerinfo string, AES_key string) Peerinfo { // Decrypt Key Encryption (AES)
-	b64dec_peerinfo, _ := base64.StdEncoding.DecodeString(kenc_peerinfo) //Decoding base64
-	kdec_peerinfo := AES_decrypt(string(b64dec_peerinfo), AES_key) //Decrypting peerinfo with Key
-	
-	var peerinfo Peerinfo
-	json.Unmarshal([]byte(kdec_peerinfo), &peerinfo)
 
 	return peerinfo
 }
@@ -483,8 +503,9 @@ func find_temp_peer(peerid string, temp_peers []Lpeer) string{
 
 func decrypt_peer(peerid string, privkey *rsa.PrivateKey,peers []Peer) Peer {
 	var peer Peer
-
-	json.Unmarshal([]byte(find_peer(peerid, peers)), &peer)
+	if len(find_peer(peerid, peers)) > 0{
+		json.Unmarshal([]byte(find_peer(peerid, peers)), &peer)
+	}
 
 	peer.AES_key = dpenc_AES(peer.AES_key, privkey)
 	jsonified_peerinfo, err := json.Marshal(dkenc_peerinfo(peer.Peerinfo, peer.AES_key))
@@ -507,3 +528,18 @@ func return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 
 	return temp_peer
 }
+
+func remove_peer(peerid string, privkey *rsa.PrivateKey,all_peers All_peers) All_peers{
+	if (check_peer(peerid, all_peers.Peers) == true && check_peer(peerid, all_peers.Offline_peers) == false){
+		var del_peer Peer
+		json.Unmarshal([]byte(find_peer(peerid, all_peers.Peers)), &del_peer)
+		
+		all_peers.Peers[index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
+		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
+
+		return all_peers
+	}else{
+		return all_peers
+	}
+}
+
