@@ -102,7 +102,7 @@ func check_peer(peerid string, peers []Peer) bool {
 	return false
 }
 
-func check_peers(peerid string, temp_peers []Lpeer) bool {
+func check_temp_peers(peerid string, temp_peers []Lpeer) bool {
 	for _, n_peer := range temp_peers{
 		switch strings.Compare(n_peer.Peerid, peerid){
 		case 0:
@@ -115,6 +115,39 @@ func check_peers(peerid string, temp_peers []Lpeer) bool {
 	return false
 }
 
+func find_peer(peerid string, peers []Peer) string{
+	for _, n_peer := range peers{
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
+			jsonified_peer, err := json.Marshal(n_peer)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return string(jsonified_peer)
+			break
+		default:
+		}
+	}
+	return ""
+
+}
+
+func find_temp_peer(peerid string, temp_peers []Lpeer) string{
+	for _, n_peer := range temp_peers{
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
+			jsonified_peer, err := json.Marshal(n_peer)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return string(jsonified_peer)
+			break
+		default:
+		}
+	}
+	return ""
+
+}
 // Peer setup
 
 func getmyip() string {
@@ -417,7 +450,7 @@ func init_enc(peerid string, pubkey_pem string) Init {
 	return init_msg
 }
 
-// Exchanging peerinfo
+// Generating peerinfo
 
 func peerinfo(role int, peerip string, port int, pubkey_pem string) Peerinfo {
 	peerinfo := Peerinfo{role, peerip, port, pubkey_pem}
@@ -458,40 +491,6 @@ func read_peers() All_peers {
 	return peers
 }
 
-func find_peer(peerid string, peers []Peer) string{
-	for _, n_peer := range peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
-			jsonified_peer, err := json.Marshal(n_peer)
-			if err != nil {
-				log.Fatal(err)
-			}
-			return string(jsonified_peer)
-			break
-		default:
-		}
-	}
-	return ""
-
-}
-
-func find_temp_peer(peerid string, temp_peers []Lpeer) string{
-	for _, n_peer := range temp_peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
-			jsonified_peer, err := json.Marshal(n_peer)
-			if err != nil {
-				log.Fatal(err)
-			}
-			return string(jsonified_peer)
-			break
-		default:
-		}
-	}
-	return ""
-
-}
-
 func decrypt_peer(peerid string, privkey *rsa.PrivateKey,peers []Peer) Peer {
 	var peer Peer
 	if len(find_peer(peerid, peers)) > 0{
@@ -519,6 +518,8 @@ func return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 
 	return temp_peer
 }
+
+// Remove peer if its offline (or Get it back if it becomes online)
 
 func remove_peer(peerid string, all_peers All_peers) All_peers{
 	if (check_peer(peerid, all_peers.Peers) == true && check_peer(peerid, all_peers.Offline_peers) == false){
@@ -549,6 +550,8 @@ func getback_peer(peerid string, all_peers All_peers) All_peers{
 	return all_peers
 }
 
+// Exchange temp_peers
+
 func return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	var temp_peers []Lpeer
 	
@@ -561,7 +564,7 @@ func return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 		for i := 1; i<=5; i++ {
 			random.Seed(time.Now().UnixNano())
 			peer := peers[random.Intn(len(peers))]
-			switch check_peers(peer.Peerid, temp_peers){
+			switch check_temp_peers(peer.Peerid, temp_peers){
 			case false:
 				temp_peer := return_temp_peer(peer.Peerid, privkey, peers)
 				temp_peers = append(temp_peers, temp_peer)
@@ -574,8 +577,23 @@ func return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 
 func share_temp_peers(privkey *rsa.PrivateKey, peers []Peer, AES_key string) string {
 	jsonified_temp_peers, _ := json.Marshal(return_temp_peers(privkey, peers))
-	payload := base64.StdEncoding.EncodeToString(AES_encrypt(jsonified_temp_peers, AES_key))
+	enc_temp_peers := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(string(jsonified_temp_peers), AES_key)))
 
-	return payload
+	return enc_temp_peers
 }
 
+func save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer) []Lpeer {
+	var temp_peers []Lpeer
+	
+	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
+	json.Unmarshal([]byte(AES_decrypt(string(b64dec_enc_temp_peers), AES_key)), &temp_peers)
+	for _, temp_peer := range temp_peers{
+		if temp_peer != lpeer{
+			if check_peer(temp_peer.Peerid, all_peers.Peers) == false || check_peer(temp_peer.Peerid, all_peers.Offline_peers){
+				temp_peers = append(temp_peers, temp_peer)		
+			}
+		}
+	}
+
+	return temp_peers
+}
