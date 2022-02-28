@@ -415,46 +415,25 @@ func peerinfo(role int, peerip string, port int, pubkey_pem string) Peerinfo {
 
 // Saving peer
 
-func save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey) Peer {
+func save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey, all_peers All_peers) All_peers {
 	jsonified_kenc_peerinfo, _ := json.Marshal(peerinfo)
 	kenc_peerinfo := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
 	penc_key := RSA_encrypt(AES_key, pubkey)
 	var peer Peer
 	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key)), 1}
 	
-	return peer
+	all_peers.Peers = append(all_peers.Peers, peer)
+	return all_peers
 	
 }
 
-func write_peers(peer Peer, status int) {
-	if _, err := os.Stat("peers.json"); err == nil{		
-		//var all_peers All_Peers
-		all_peers := read_peers()
-		switch status{
-		case 1:
-			all_peers.Peers = append(all_peers.Peers, peer)
-		case 0:
-			all_peers.Offline_peers = append(all_peers.Offline_peers, peer)
-		}
-		jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
-		
-		if err != nil{
-			log.Fatal(err)
-		}
-
-		_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
-
-	}else {
-		var all_peers All_peers
-		all_peers.Peers = append(all_peers.Peers, peer)
-		jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
-		if err != nil{
-			log.Fatal(err)
-		}
-
-		_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
-
+func write_peers(all_peers All_peers) {
+	jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
+	if err != nil{
+		log.Fatal(err)
 	}
+
+	_  = ioutil.WriteFile("peers.json", jsonified_peers, 0664)	
 }
 
 func read_peers() All_peers {
@@ -529,7 +508,7 @@ func return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 	return temp_peer
 }
 
-func remove_peer(peerid string, privkey *rsa.PrivateKey,all_peers All_peers) All_peers{
+func remove_peer(peerid string, all_peers All_peers) All_peers{
 	if (check_peer(peerid, all_peers.Peers) == true && check_peer(peerid, all_peers.Offline_peers) == false){
 		var del_peer Peer
 		json.Unmarshal([]byte(find_peer(peerid, all_peers.Peers)), &del_peer)
@@ -537,9 +516,26 @@ func remove_peer(peerid string, privkey *rsa.PrivateKey,all_peers All_peers) All
 		all_peers.Peers[index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
 		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
 
-		return all_peers
-	}else{
+		write_peers(all_peers)
 		return all_peers
 	}
+
+	return all_peers
 }
+
+func getback_peer(peerid string, all_peers All_peers) All_peers{
+	if (check_peer(peerid, all_peers.Peers) == false && check_peer(peerid, all_peers.Offline_peers) == true){
+		var del_peer Peer
+		json.Unmarshal([]byte(find_peer(peerid, all_peers.Peers)), &del_peer)
+		all_peers.Offline_peers[index(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1]  //Remove peer from offline_peer
+		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
+
+		write_peers(all_peers)
+		return all_peers
+	}
+
+	return all_peers
+}
+
+
 
