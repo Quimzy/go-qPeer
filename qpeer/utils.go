@@ -102,6 +102,19 @@ func check_peer(peerid string, peers []Peer) bool {
 	return false
 }
 
+func check_peers(peerid string, temp_peers []Lpeer) bool {
+	for _, n_peer := range temp_peers{
+		switch strings.Compare(n_peer.Peerid, peerid){
+		case 0:
+			return true
+			break
+		default:
+		}
+	}
+
+	return false
+}
+
 // Peer setup
 
 func getmyip() string {
@@ -112,7 +125,6 @@ func getmyip() string {
 	ip, _ := ioutil.ReadAll(req.Body)
 	return string(ip)
 }
-
 
 func RSA_keygen() (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -537,5 +549,27 @@ func getback_peer(peerid string, all_peers All_peers) All_peers{
 	return all_peers
 }
 
+func return_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
+	var temp_peers []Lpeer
+	
+	if len(peers) <= 5{
+		for _, peer := range peers {
+			temp_peer := return_temp_peer(peer.Peerid, privkey, peers)
+			temp_peers = append(temp_peers, temp_peer)
+		}
+	}else{
+		for i := 1; i<=5; i++ {
+			random.Seed(time.Now().UnixNano())
+			peer := peers[random.Intn(len(peers))]
+			switch check_peers(peer.Peerid, temp_peers){
+			case false:
+				temp_peer := return_temp_peer(peer.Peerid, privkey, peers)
+				temp_peers = append(temp_peers, temp_peer)
+			}
+		}
+	}
+
+	return temp_peers
+}
 
 
