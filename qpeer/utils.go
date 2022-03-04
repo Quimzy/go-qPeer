@@ -33,7 +33,7 @@ type Lpeer struct
 	Peerid string `json:"peerid"`
 	Role int `json:"role"`
 	Peerip string `json:"peerip"`
-	Port int `json:"port"`
+	Port string `json:"port"`
 }
 
 type All_peers struct
@@ -54,7 +54,7 @@ type Peerinfo struct
 {
 	Role int 
 	Peerip string 
-	Port int 
+	Port string 
 	RSA_Pubkey string
 }
 
@@ -293,7 +293,7 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 		//Setting the rest of the variables
 		lpeer.Role = 0
 		lpeer.Peerip = Getmyip()
-		lpeer.Port = 1691
+		lpeer.Port = "1691"
 
 		Write_lpeer(lpeer)
 		return lpeer
@@ -452,7 +452,7 @@ func Init_enc(peerid string, pubkey_pem string) Init {
 
 // Generating peerinfo
 
-func peerinfo(role int, peerip string, port int, pubkey_pem string) Peerinfo {
+func peerinfo(role int, peerip string, port string, pubkey_pem string) Peerinfo {
 	peerinfo := Peerinfo{role, peerip, port, pubkey_pem}
 
 	return peerinfo
