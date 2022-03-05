@@ -8,7 +8,6 @@ import ("net"
 	"crypto/rsa"
 )
 
-
 func greet_setup(conn net.Conn, peerid string) Init{
 	msg, err := json.Marshal(Setup(peerid))
 	if err != nil{
@@ -135,3 +134,18 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 
 }
 
+func Client_exchange_peers(lpeer Lpeer, peerid string, privkey *rsa.PrivateKey, peers []Peer){
+	peer := Decrypt_peer(peerid, privkey, peers)
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
+
+	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
+	protocol := "tcp"
+	
+	conn, err := net.Dial(protocol, address)
+	if err != nil{
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+}

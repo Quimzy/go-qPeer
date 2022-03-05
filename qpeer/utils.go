@@ -491,7 +491,7 @@ func Read_peers() All_peers {
 	return peers
 }
 
-func Decrypt_peer(peerid string, privkey *rsa.PrivateKey,peers []Peer) Peer {
+func Decrypt_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Peer {
 	var peer Peer
 	if len(Find_peer(peerid, peers)) > 0{
 		json.Unmarshal([]byte(Find_peer(peerid, peers)), &peer)
