@@ -8,6 +8,8 @@ import ("net"
 	"crypto/rsa"
 )
 
+// Setup
+
 func greet_setup(conn net.Conn, peerid string) Init{
 	msg, err := json.Marshal(Setup(peerid))
 	if err != nil{
@@ -134,6 +136,8 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 
 }
 
+// Exchange Peers
+
 func greet_exchange_peers(conn net.Conn, peerid string) string{
 	msg, err := json.Marshal(Exchange_peers(peerid))
 	if err != nil{
@@ -151,8 +155,7 @@ func greet_exchange_peers(conn net.Conn, peerid string) string{
 		log.Fatal(read_err)
 	}
 
-	return string(buffer[:n])
-	
+	return string(buffer[:n])	
 }
 
 func send_dkenc_verify(conn net.Conn, dkenc_verify string) string{
@@ -198,8 +201,10 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 
 }
 
+// Bootstrap
+
 func send_lpeer(conn net.Conn, kenc_lpeer string) string{
-	_, write_err := conn.Write([]byte(kenc_lpeer string))
+	_, write_err := conn.Write([]byte(kenc_lpeer))
 	if write_err != nil{
 		log.Fatal(write_err)
 	}
@@ -241,6 +246,8 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 	return temp_peers
 }
 
+// Ping
+
 func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
 	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
 	peerinfo := peer.Peerinfo
@@ -251,6 +258,24 @@ func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) Al
 	conn, err := net.Dial(protocol, address)
 	if err != nil{
 		all_peers = Remove_peer(peer.Peerid, all_peers)
+	}
+	defer conn.Close()
+
+	return all_peers
+}
+
+// Getback
+
+func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
+	peer := Decrypt_peer(peerid, privkey, all_peers.Offline_peers)
+	peerinfo := peer.Peerinfo
+
+	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
+	protocol := "tcp"
+
+	conn, err := net.Dial(protocol, address)
+	if err == nil{
+		all_peers = Getback_peer(peer.Peerid, all_peers)
 	}
 
 	return all_peers
