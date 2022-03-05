@@ -198,6 +198,49 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 
 }
 
+func send_lpeer(conn net.Conn, kenc_lpeer string) string{
+	_, write_err := conn.Write([]byte(kenc_lpeer string))
+	if write_err != nil{
+		log.Fatal(write_err)
+	}
+
+	buffer := make([]byte, 1024)
+
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+
+	return string(buffer[:n])
+}
+
+func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) []Lpeer{
+
+	address := string(fmt.Sprintf("%s:%s", peerip, port))
+	protocol := "tcp"
+	
+	conn, err := net.Dial(protocol, address)
+	if err != nil{
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	kenc_verify := greet_exchange_peers(conn, lpeer.Peerid)
+	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
+
+	enc_temp_peers := send_dkenc_verify(conn, dkenc_verify)
+	temp_peers := Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+
+	kenc_lpeer := Kenc_lpeer(lpeer, AES_key)
+	bye := send_lpeer(conn, kenc_lpeer)
+
+	if bye != "bye"{//Improve this with better error handling
+		log.Fatal("Bye wasn't received")
+	}
+
+	return temp_peers
+}
+
 func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
 	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
 	peerinfo := peer.Peerinfo
@@ -206,7 +249,7 @@ func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) Al
 	protocol := "tcp"
 
 	conn, err := net.Dial(protocol, address)
-	if err != nil{//Improve this with new Error Handling
+	if err != nil{
 		all_peers = Remove_peer(peer.Peerid, all_peers)
 	}
 

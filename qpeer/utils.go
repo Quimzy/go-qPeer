@@ -419,6 +419,26 @@ func Dkenc_verify(enc_msg string, key string) string{
 	return AES_decrypt(string(b64dec_verify), key)
 }
 
+func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
+	jsonified_lpeer, err := json.Marshal(lpeer) 
+	if err != nil {
+		log.Fatal(err)
+	}
+	kenc_lpeer := AES_encrypt(string(jsonified_lpeer), AES_key) //Encrypting lpeer with Key
+
+	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer))
+}
+
+func Dkenc_peerinfo(kenc_lpeer string, AES_key string) Lpeer {
+	b64dec_lpeer, _ := base64.StdEncoding.DecodeString(kenc_lpeer) 
+	kdec_lpeer := AES_decrypt(string(b64dec_lpeer), AES_key) //Decrypting lpeer with Key
+	
+	var lpeer Lpeer
+	json.Unmarshal([]byte(kdec_lpeer), &lpeer)
+
+	return lpeer
+}
+
 // MsgTypes
 
 type Qpeer struct 
