@@ -197,3 +197,18 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 	return temp_peers
 
 }
+
+func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
+	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
+	peerinfo := peer.Peerinfo
+
+	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
+	protocol := "tcp"
+
+	conn, err := net.Dial(protocol, address)
+	if err != nil{//Improve this with new Error Handling
+		all_peers = Remove_peer(peer.Peerid, all_peers)
+	}
+
+	return all_peers
+}

@@ -148,6 +148,7 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 	return ""
 
 }
+
 // Peer setup
 
 func Getmyip() string {
@@ -486,13 +487,16 @@ func Read_peers() All_peers {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	var peers All_peers
 	json.Unmarshal([]byte(reader), &peers)
+
 	return peers
 }
 
 func Decrypt_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Peer {
 	var peer Peer
+
 	if len(Find_peer(peerid, peers)) > 0{
 		json.Unmarshal([]byte(Find_peer(peerid, peers)), &peer)
 	}
