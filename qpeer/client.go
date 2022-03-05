@@ -134,12 +134,46 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 
 }
 
-func Client_exchange_peers(lpeer Lpeer, peerid string, privkey *rsa.PrivateKey, peers []Peer){
-	peer := Decrypt_peer(peerid, privkey, peers)
-	var peerinfo Peerinfo
-	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
+func greet_exchange_peers(conn net.Conn, peerid string) string{
+	msg, err := json.Marshal(Exchange_peers(peerid))
+	if err != nil{
+		log.Fatal(err)
+	}
+	_, write_err := conn.Write(msg)
+	if write_err != nil{
+		log.Fatal(write_err)
+	}
 
-	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
+	buffer := make([]byte, 2048)
+
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+
+	return string(buffer[:n])
+	
+}
+
+func send_dkenc_verify(conn net.Conn, dkenc_verify string) string{
+	_, write_err := conn.Write([]byte(dkenc_verify))
+	if write_err != nil{
+		log.Fatal(write_err)
+	}
+
+	buffer := make([]byte, 8192)
+
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+
+	return string(buffer[:n])
+}
+
+func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) []Lpeer{
+
+	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
 	
 	conn, err := net.Dial(protocol, address)
@@ -147,5 +181,19 @@ func Client_exchange_peers(lpeer Lpeer, peerid string, privkey *rsa.PrivateKey, 
 		log.Fatal(err)
 	}
 	defer conn.Close()
+
+	kenc_verify := greet_exchange_peers(conn, lpeer.Peerid)
+	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
+
+	enc_temp_peers := send_dkenc_verify(conn, dkenc_verify)
+	temp_peers := Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+
+	if len(all_peers.Peers) >= 5{
+		send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
+	}else{
+		send_bye(conn)
+	}
+
+	return temp_peers
 
 }
