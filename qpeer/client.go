@@ -250,7 +250,8 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 
 func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
 	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
-	peerinfo := peer.Peerinfo
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 
 	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
 	protocol := "tcp"
@@ -268,7 +269,8 @@ func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) Al
 
 func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
 	peer := Decrypt_peer(peerid, privkey, all_peers.Offline_peers)
-	peerinfo := peer.Peerinfo
+	var peerinfo Peerinfo
+	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 
 	address := string(fmt.Sprintf("%s:%s", peerinfo.Peerip, peerinfo.Port))
 	protocol := "tcp"
@@ -277,6 +279,7 @@ func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey)
 	if err == nil{
 		all_peers = Getback_peer(peer.Peerid, all_peers)
 	}
-
+	defer conn.Close()
+	
 	return all_peers
 }

@@ -429,7 +429,7 @@ func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
 	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer))
 }
 
-func Dkenc_peerinfo(kenc_lpeer string, AES_key string) Lpeer {
+func Dkenc_lpeer(kenc_lpeer string, AES_key string) Lpeer {
 	b64dec_lpeer, _ := base64.StdEncoding.DecodeString(kenc_lpeer) 
 	kdec_lpeer := AES_decrypt(string(b64dec_lpeer), AES_key) //Decrypting lpeer with Key
 	
