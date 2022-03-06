@@ -611,6 +611,7 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 	
 	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
 	json.Unmarshal([]byte(AES_decrypt(string(b64dec_enc_temp_peers), AES_key)), &temp_peers)
+	
 	for _, temp_peer := range temp_peers{
 		if temp_peer != lpeer{
 			if Check_peer(temp_peer.Peerid, all_peers.Peers) == false || Check_peer(temp_peer.Peerid, all_peers.Offline_peers){
