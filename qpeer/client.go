@@ -6,6 +6,7 @@ import ("net"
 	"encoding/json"
 	"fmt"
 	"crypto/rsa"
+	"strings"
 )
 
 // Setup
@@ -27,10 +28,10 @@ func greet_setup(conn net.Conn, peerid string) Init{
 		log.Fatal(read_err)
 	}
 
-	var recvd Init
-	json.Unmarshal(buffer[:n], &recvd)
+	var init Init
+	json.Unmarshal(buffer[:n], &init)
 
-	return recvd
+	return init
 
 }
 
@@ -50,7 +51,6 @@ func send_key(conn net.Conn, AES_key string, pubkey *rsa.PublicKey) string{
 	}
 
 	return string(buffer[:n])
-
 }
 
 func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string) string{
@@ -62,24 +62,6 @@ func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string)
 		log.Fatal(write_err)
 	}
 
-	buffer := make([]byte, 8192)
-
-	n, read_err := conn.Read(buffer)
-	if read_err != nil {
-		log.Fatal(read_err)
-	}
-
-	return string(buffer[:n])
-
-}
-
-func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string){
-	enc_temp_peers := Share_temp_peers(Return_temp_peers(privkey, peers), AES_key)
-	_, write_err := conn.Write([]byte(enc_temp_peers))
-	if write_err != nil{
-		log.Fatal(write_err)
-	}
-
 	buffer := make([]byte, 1024)
 
 	n, read_err := conn.Read(buffer)
@@ -87,9 +69,7 @@ func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_k
 		log.Fatal(read_err)
 	}
 
-	if string(buffer[:n]) == "bye"{
-		return
-	}//Add panic(ByeError)
+	return string(buffer[:n])
 }
 
 func send_bye(conn net.Conn){
@@ -99,7 +79,9 @@ func send_bye(conn net.Conn){
 	}
 }
 
-func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, peerid string, privkey *rsa.PrivateKey, pubkey *rsa.PublicKey, pubkey_pem string) []Lpeer{
+func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, pubkey_pem string) All_peers{
+	pubkey := RSA_ImportPubkey(pubkey_pem)
+
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
 	
@@ -109,31 +91,33 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 	}
 	defer conn.Close()
 
-	init := greet_setup(conn, peerid)
+	init := greet_setup(conn, lpeer.Peerid)
 	if init.Peerid != Sha1_encrypt(init.Pubkey_pem){
 		log.Fatal("Peerid doesn't match public key")
 	}
 
+	server_pubkey := RSA_ImportPubkey(init.Pubkey_pem)
+
 	AES_key := AES_keygen()
 
-	kenc_peerinfo := send_key(conn, AES_key, pubkey)
+	kenc_peerinfo := send_key(conn, AES_key, server_pubkey)
 	peerinfo := Dkenc_peerinfo(kenc_peerinfo, AES_key)
-	all_peers = Save_peer(init.Peerid, peerinfo, AES_key, pubkey, all_peers)
-
-	Write_peers(all_peers)
-
-	enc_temp_peers := send_peerinfo(conn, lpeer, pubkey_pem, AES_key)
-	temp_peers := Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
 	
-
-	if len(all_peers.Peers) >= 5{
-		send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
-	}else{
+	switch strings.Compare(init.Peerid, lpeer.Peerid){
+	case 0:
+		all_peers = Save_peer(init.Peerid, peerinfo, AES_key, pubkey, all_peers)
+		Write_peers(all_peers)
+	default:
+	}
+	
+	bye := send_peerinfo(conn, lpeer, pubkey_pem, AES_key)
+	if bye == "bye"{
 		send_bye(conn)
+	}else{
+		log.Fatal("Bye not received")
 	}
 
-	return temp_peers
-
+	return all_peers
 }
 
 // Exchange Peers
@@ -172,6 +156,25 @@ func send_dkenc_verify(conn net.Conn, dkenc_verify string) string{
 	}
 
 	return string(buffer[:n])
+}
+
+func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string){
+	enc_temp_peers := Share_temp_peers(Return_temp_peers(privkey, peers), AES_key)
+	_, write_err := conn.Write([]byte(enc_temp_peers))
+	if write_err != nil{
+		log.Fatal(write_err)
+	}
+
+	buffer := make([]byte, 1024)
+
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+
+	if string(buffer[:n]) == "bye"{
+		return
+	}//Add panic(ByeError)
 }
 
 func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) []Lpeer{
@@ -283,3 +286,5 @@ func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey)
 
 	return all_peers
 }
+
+//Why should peers share peers on setup? Save peer then do exchange peers?
