@@ -74,7 +74,7 @@ func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string)
 }
 
 func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string){
-	enc_temp_peers := Share_temp_peers(privkey, peers, AES_key)
+	enc_temp_peers := Share_temp_peers(Return_temp_peers(privkey, peers), AES_key)
 	_, write_err := conn.Write([]byte(enc_temp_peers))
 	if write_err != nil{
 		log.Fatal(write_err)
@@ -280,6 +280,6 @@ func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey)
 		all_peers = Getback_peer(peer.Peerid, all_peers)
 	}
 	defer conn.Close()
-	
+
 	return all_peers
 }

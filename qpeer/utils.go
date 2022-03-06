@@ -599,8 +599,8 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	return temp_peers
 }
 
-func Share_temp_peers(privkey *rsa.PrivateKey, peers []Peer, AES_key string) string {
-	jsonified_temp_peers, _ := json.Marshal(Return_temp_peers(privkey, peers))
+func Share_temp_peers(temp_peers []Lpeer, AES_key string) string {
+	jsonified_temp_peers, _ := json.Marshal(temp_peers)
 	enc_temp_peers := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(string(jsonified_temp_peers), AES_key)))
 
 	return enc_temp_peers
