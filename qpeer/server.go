@@ -5,11 +5,15 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
+	"strings"
 )
 
 func send_init(conn net.Conn, init Init) string{//Recv AES_key
 	jsonized_init, err := json.Marshal(init)
-
+	if err != nil{
+		log.Fatal(err)
+	}
+	
 	_, write_err := conn.Write([]byte(jsonized_init))
 	if write_err != nil{
 		log.Fatal(write_err)
@@ -95,7 +99,7 @@ func send_kenc_verify(conn net.Conn, verify_msg string, AES_key string) string{
 	return string(buffer[:n])
 }
 
-func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string) string{
+func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string) string{
 	enc_temp_peers := Share_temp_peers(Return_temp_peers(privkey, peers), AES_key)
 
 	_, write_err := conn.Write([]byte(enc_temp_peers))
@@ -113,7 +117,7 @@ func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_k
 	return string(buffer[:n])
 }
 
-func Server_exchange_peers(conn net.Conn, all_peers All_peers, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey) []Lpeer{
+func Server_exchange_peers(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey) []Lpeer{
 	verify_msg := RandomString(32)
 	dkenc_verify := send_kenc_verify(conn, verify_msg, AES_key)
 
@@ -121,10 +125,10 @@ func Server_exchange_peers(conn net.Conn, all_peers All_peers, temp_peers []Lpee
 		log.Fatal("Peer doesn't have the right AES_key")
 	}
 
-	recvd := send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
+	recvd := send_temp_peers_server(conn, privkey, all_peers.Peers, AES_key)
 	
 	if recvd != "bye"{
-		temp_peers = Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+		temp_peers = Save_temp_peers(recvd, privkey, all_peers, AES_key, lpeer)
 	}
 
 	return temp_peers
