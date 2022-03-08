@@ -47,7 +47,6 @@ type Peer struct
 	Peerid string `json:"peerid"`
 	Peerinfo string `json:"peerinfo"`
 	AES_key string `json:"key"`
-	Stauts int `json:"status"`
 }
 
 type Peerinfo struct
@@ -486,7 +485,7 @@ func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 	kenc_peerinfo := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
 	penc_key := RSA_encrypt(AES_key, pubkey)
 	var peer Peer
-	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key)), 1}
+	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key))}
 	
 	all_peers.Peers = append(all_peers.Peers, peer)
 	return all_peers
@@ -622,3 +621,6 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 
 	return temp_peers
 }
+ 
+//Peer should not be saved if peerid == lpeer.Peerid
+//Peer should not be saved if it's already in all_peers
