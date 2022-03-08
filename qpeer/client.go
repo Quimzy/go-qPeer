@@ -72,7 +72,7 @@ func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string)
 	return string(buffer[:n])
 }
 
-func send_bye(conn net.Conn){
+func Send_bye(conn net.Conn){
 	_, write_err := conn.Write([]byte("bye"))
 	if write_err != nil{
 		log.Fatal(write_err)
@@ -112,7 +112,7 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 	
 	bye := send_peerinfo(conn, lpeer, pubkey_pem, AES_key)
 	if bye == "bye"{
-		send_bye(conn)
+		Send_bye(conn)
 	}else{
 		log.Fatal("Bye not received")
 	}
@@ -197,7 +197,7 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 	if len(all_peers.Peers) >= 5{
 		send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
 	}else{
-		send_bye(conn)
+		Send_bye(conn)
 	}
 
 	return temp_peers
@@ -286,5 +286,3 @@ func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey)
 
 	return all_peers
 }
-
-//Why should peers share peers on setup? Save peer then do exchange peers?
