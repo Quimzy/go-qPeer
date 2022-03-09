@@ -19,7 +19,6 @@ import ("encoding/json"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"strings"
 )
 
 type RSA_Keys struct 
@@ -37,7 +36,7 @@ type Lpeer struct
 }
 
 type All_peers struct
-	{
+{
 	Peers []Peer `json:"peers"`
 	Offline_peers []Peer `json:"offline_peers"`
 }
@@ -90,11 +89,9 @@ func Index(peers []Peer, peer Peer) int{
 
 func Check_peer(peerid string, peers []Peer) bool {
 	for _, n_peer := range peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
+		if n_peer.Peerid == peerid{
 			return true
 			break
-		default:
 		}
 	}
 
@@ -103,11 +100,9 @@ func Check_peer(peerid string, peers []Peer) bool {
 
 func Check_temp_peers(peerid string, temp_peers []Lpeer) bool {
 	for _, n_peer := range temp_peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
+		if n_peer.Peerid == peerid{
 			return true
 			break
-		default:
 		}
 	}
 
@@ -116,15 +111,13 @@ func Check_temp_peers(peerid string, temp_peers []Lpeer) bool {
 
 func Find_peer(peerid string, peers []Peer) string{
 	for _, n_peer := range peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
+		if n_peer.Peerid == peerid{
 			jsonified_peer, err := json.Marshal(n_peer)
 			if err != nil {
 				log.Fatal(err)
 			}
 			return string(jsonified_peer)
 			break
-		default:
 		}
 	}
 	return ""
@@ -133,15 +126,12 @@ func Find_peer(peerid string, peers []Peer) string{
 
 func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 	for _, n_peer := range temp_peers{
-		switch strings.Compare(n_peer.Peerid, peerid){
-		case 0:
+		if n_peer.Peerid == peerid{
 			jsonified_peer, err := json.Marshal(n_peer)
 			if err != nil {
 				log.Fatal(err)
 			}
 			return string(jsonified_peer)
-			break
-		default:
 		}
 	}
 	return ""
@@ -487,7 +477,10 @@ func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 	var peer Peer
 	peer = Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key))}
 	
-	all_peers.Peers = append(all_peers.Peers, peer)
+	if Check_peer(peerid, all_peers.Peers) == false && Check_peer(peerid, all_peers.Offline_peers) == false{
+		all_peers.Peers = append(all_peers.Peers, peer)
+	}
+	
 	return all_peers
 	
 }
@@ -621,6 +614,3 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 
 	return temp_peers
 }
- 
-//Peer should not be saved if peerid == lpeer.Peerid
-//Peer should not be saved if it's already in all_peers

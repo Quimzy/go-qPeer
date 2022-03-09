@@ -4,7 +4,7 @@ package main
 import("github.com/Quimzy/go-qPeer/qpeer"
 	"fmt"
 	"os"
-	//"encoding/json"
+	"encoding/json"
 	"net"
 	"log"
 )
@@ -45,9 +45,11 @@ func main(){
 		if read_err != nil {
 			log.Fatal(read_err)
 		}
-		fmt.Println(string(buffer[:n]))
-
-		all_peers = qpeer.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem)
+		
+		var setup qpeer.Qpeer
+		json.Unmarshal(buffer[:n], &setup)
+		fmt.Println(setup.Peerid)
+		all_peers = qpeer.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem, setup.Peerid)
 		fmt.Println(all_peers)
 	}
 

@@ -6,7 +6,6 @@ import ("net"
 	"encoding/json"
 	"fmt"
 	"crypto/rsa"
-	"strings"
 )
 
 // Setup
@@ -102,12 +101,10 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 
 	kenc_peerinfo := send_key(conn, AES_key, server_pubkey)
 	peerinfo := Dkenc_peerinfo(kenc_peerinfo, AES_key)
-	
-	switch strings.Compare(init.Peerid, lpeer.Peerid){
-	case 0:
+
+	if init.Peerid != lpeer.Peerid{
 		all_peers = Save_peer(init.Peerid, peerinfo, AES_key, pubkey, all_peers)
 		Write_peers(all_peers)
-	default:
 	}
 	
 	bye := send_peerinfo(conn, lpeer, pubkey_pem, AES_key)

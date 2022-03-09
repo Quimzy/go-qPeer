@@ -5,7 +5,6 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
-	"strings"
 	"fmt"
 )
 
@@ -49,22 +48,21 @@ func send_peerinfo_server(conn net.Conn, lpeer Lpeer, pubkey_pem string, AES_key
 	return string(buffer[:n])
 }
 
-func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, pubkey_pem string) All_peers{
+func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string) All_peers{
 	pubkey := RSA_ImportPubkey(pubkey_pem)
 	init := Init_enc(lpeer.Peerid, pubkey_pem)
 
 	AES_key := Dpenc_AES(send_init(conn, init), privkey)
-	fmt.Println(AES_key)
 
 	kenc_peerinfo := send_peerinfo_server(conn, lpeer, pubkey_pem, AES_key)
 	peerinfo := Dkenc_peerinfo(kenc_peerinfo, AES_key)
 
-	switch strings.Compare(init.Peerid, lpeer.Peerid){
-	case 0:
-		all_peers = Save_peer(lpeer.Peerid, peerinfo, AES_key, pubkey, all_peers)
-		Write_peers(all_peers)
-	default:
+	if lpeer.Peerid != peerid{
+		all_peers = Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
+		fmt.Println(all_peers)
+		Write_peers(all_peers)		
 	}
+	
 
 	Send_bye(conn)
 	buffer := make([]byte, 1024)
