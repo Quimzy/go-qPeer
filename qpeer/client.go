@@ -78,7 +78,7 @@ func Send_bye(conn net.Conn){
 	}
 }
 
-func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, pubkey_pem string) All_peers{
+func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, pubkey_pem string){
 	pubkey := RSA_ImportPubkey(pubkey_pem)
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
@@ -114,7 +114,6 @@ func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, 
 		log.Fatal("Bye not received")
 	}
 
-	return all_peers
 }
 
 // Exchange Peers
@@ -174,14 +173,14 @@ func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_k
 	}//Add panic(ByeError)
 }
 
-func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string){
+func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) error{
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
 	
 	conn, err := net.Dial(protocol, address)
 	if err != nil{
-		log.Fatal(err)
+		return err
 	}
 	defer conn.Close()
 
@@ -197,6 +196,7 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 		Send_bye(conn)
 	}
 
+	return nil
 }
 
 // Bootstrap
@@ -245,7 +245,7 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 
 // Ping
 
-func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
+func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey){
 	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
@@ -259,12 +259,12 @@ func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) Al
 	}
 	defer conn.Close()
 
-	return all_peers
+	Write_peers(all_peers)
 }
 
 // Getback
 
-func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey) All_peers{
+func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey){
 	peer := Decrypt_peer(peerid, privkey, all_peers.Offline_peers)
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
@@ -278,5 +278,5 @@ func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey)
 	}
 	defer conn.Close()
 
-	return all_peers
+	Write_peers(all_peers)
 }

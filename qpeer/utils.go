@@ -544,9 +544,8 @@ func Remove_peer(peerid string, all_peers All_peers) All_peers{
 		
 		all_peers.Peers[Index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
 		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
-
+		
 		Write_peers(all_peers)
-		return all_peers
 	}
 
 	return all_peers
@@ -640,7 +639,9 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 Save_temp_peers writes to a temp_peers file, that gets deleted when qPeer stops
 Other functions that require temp_peers, read from that file
 Detect CTRL+C, delete temp_peers
-.temp_peers?
 
-P1 exchange_peers with other peer (p2), but p1 is in offline_peers for p2.  
+Random pick of peer:
+math/rand generate random number between (0, len(peers)) = index
+peer = all_peers.Peers[index]
+
 */
