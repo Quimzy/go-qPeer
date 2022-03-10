@@ -174,7 +174,7 @@ func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_k
 	}//Add panic(ByeError)
 }
 
-func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) []Lpeer{
+func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string){
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
@@ -189,15 +189,13 @@ func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.Privat
 	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
 
 	enc_temp_peers := send_dkenc_verify(conn, dkenc_verify)
-	temp_peers := Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+	Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
 
 	if len(all_peers.Peers) >= 5{
 		send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
 	}else{
 		Send_bye(conn)
 	}
-
-	return temp_peers
 
 }
 
@@ -219,7 +217,7 @@ func send_lpeer(conn net.Conn, kenc_lpeer string) string{
 	return string(buffer[:n])
 }
 
-func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) []Lpeer{
+func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string){
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
@@ -234,7 +232,7 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
 
 	enc_temp_peers := send_dkenc_verify(conn, dkenc_verify)
-	temp_peers := Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+	Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
 
 	kenc_lpeer := Kenc_lpeer(lpeer, AES_key)
 	bye := send_lpeer(conn, kenc_lpeer)
@@ -243,7 +241,6 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 		log.Fatal("Bye wasn't received")
 	}
 
-	return temp_peers
 }
 
 // Ping

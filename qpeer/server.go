@@ -5,7 +5,6 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
-	"fmt"
 )
 
 func send_init(conn net.Conn, init Init) string{//Recv AES_key
@@ -48,7 +47,7 @@ func send_peerinfo_server(conn net.Conn, lpeer Lpeer, pubkey_pem string, AES_key
 	return string(buffer[:n])
 }
 
-func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string) All_peers{
+func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string){
 	pubkey := RSA_ImportPubkey(pubkey_pem)
 	init := Init_enc(lpeer.Peerid, pubkey_pem)
 
@@ -59,7 +58,6 @@ func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.
 
 	if lpeer.Peerid != peerid{
 		all_peers = Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
-		fmt.Println(all_peers)
 		Write_peers(all_peers)		
 	}
 	
@@ -76,7 +74,6 @@ func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.
 		log.Fatal("Bye not received")
 	}
 
-	return all_peers
 }
 
 //Exchange peers
@@ -118,27 +115,26 @@ func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer
 }
 
 
-func Server_exchange_peers(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey) []Lpeer{
+func Server_exchange_peers(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, peerid string, privkey *rsa.PrivateKey){
+	peer := Decrypt_peer(peerid, privkey, all_peers.Peers) 
+
 	verify_msg := RandomString(32)
-	dkenc_verify := send_kenc_verify(conn, verify_msg, AES_key)
+	dkenc_verify := send_kenc_verify(conn, verify_msg, peer.AES_key)
 
 	if dkenc_verify != verify_msg{
 		log.Fatal("Peer doesn't have the right AES_key")
 	}
 
-	recvd := send_temp_peers_server(conn, privkey, all_peers.Peers, AES_key)
+	recvd := send_temp_peers_server(conn, privkey, all_peers.Peers, peer.AES_key)
 	
 	if recvd != "bye"{
-		temp_peers = Save_temp_peers(recvd, privkey, all_peers, AES_key, lpeer)
+		Save_temp_peers(recvd, privkey, all_peers, peer.AES_key, lpeer)
 	}
-
-	return temp_peers
-
 }
 
 // Bootstrap
 
-func Server_bootstrap(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey) []Lpeer{
+func Server_bootstrap(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey){
 	verify_msg := RandomString(32)
 	dkenc_verify := send_kenc_verify(conn, verify_msg, AES_key)
 
@@ -147,9 +143,8 @@ func Server_bootstrap(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peer
 	}
 
 	temp_peer := send_temp_peers_server(conn, privkey, all_peers.Peers, AES_key)
-	temp_peers = Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
+	Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
 
 	Send_bye(conn)
 
-	return temp_peers
 }

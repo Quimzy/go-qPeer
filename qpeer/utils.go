@@ -591,6 +591,27 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	return temp_peers
 }
 
+func Write_temp_peers(temp_peers []Lpeer){
+	jsonified_temp_peers, err := json.Marshal(temp_peers)
+	if err != nil{
+		log.Fatal(err)
+	}
+
+	_  = ioutil.WriteFile("temp_peers", jsonified_temp_peers, 0664)	
+}
+
+func Read_temp_peers() []Lpeer {
+	reader, err := ioutil.ReadFile("temp_peers")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var temp_peers []Lpeer
+	json.Unmarshal([]byte(reader), &temp_peers)
+
+	return temp_peers
+}
+
 func Share_temp_peers(temp_peers []Lpeer, AES_key string) string {
 	jsonified_temp_peers, _ := json.Marshal(temp_peers)
 	enc_temp_peers := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(string(jsonified_temp_peers), AES_key)))
@@ -598,7 +619,7 @@ func Share_temp_peers(temp_peers []Lpeer, AES_key string) string {
 	return enc_temp_peers
 }
 
-func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer) []Lpeer {
+func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer){
 	var temp_peers []Lpeer
 	
 	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
@@ -606,11 +627,20 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 
 	for _, temp_peer := range temp_peers{
 		if temp_peer != lpeer{
-			if Check_peer(temp_peer.Peerid, all_peers.Peers) == false || Check_peer(temp_peer.Peerid, all_peers.Offline_peers){
+			if Check_peer(temp_peer.Peerid, all_peers.Peers) == false || Check_peer(temp_peer.Peerid, all_peers.Offline_peers) == false || Check_temp_peers(temp_peer.Peerid, temp_peers) == false{
 				temp_peers = append(temp_peers, temp_peer)		
 			}
 		}
 	}
 
-	return temp_peers
+	Write_temp_peers(temp_peers)
 }
+
+/*
+Save_temp_peers writes to a temp_peers file, that gets deleted when qPeer stops
+Other functions that require temp_peers, read from that file
+Detect CTRL+C, delete temp_peers
+.temp_peers?
+
+P1 exchange_peers with other peer (p2), but p1 is in offline_peers for p2.  
+*/

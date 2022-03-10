@@ -2,20 +2,54 @@
 package main
 
 import("github.com/Quimzy/go-qPeer/qpeer"
-	"fmt"
+	//"fmt"
 	"os"
 	"encoding/json"
 	"net"
 	"log"
+	"crypto/rsa"
 )
 
-//func Server()
+func Server(srv net.Listener, lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string){
+	for {
+		conn, err := srv.Accept()
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        buffer := make([]byte, 2048)
+
+		n, read_err := conn.Read(buffer)
+		if read_err != nil {
+			log.Fatal(read_err)
+		}
+
+		var setup qpeer.Qpeer
+		json.Unmarshal(buffer[:n], &setup)
+
+		switch setup.Msgtype{
+		case "setup":
+			go qpeer.Server_setup(conn, qpeer.Read_peers(), lpeer, privkey, pubkey_pem, setup.Peerid)
+		case "exchange_peers":
+			var temp_peers []qpeer.Lpeer
+			if _, err := os.Stat("temp_peers"); err == nil{
+				temp_peers = qpeer.Read_temp_peers()
+			}
+
+			if qpeer.Check_peer(setup.Peerid, qpeer.Read_peers().Offline_peers) == true{
+				qpeer.Write_peers(qpeer.Getback_peer(setup.Peerid, qpeer.Read_peers()))
+			}
+
+			go qpeer.Server_exchange_peers(conn, qpeer.Read_peers(), lpeer, temp_peers, setup.Peerid, privkey)
+		}
+	}
+
+}
 
 //func Client()
 
 func main(){
 	var all_peers qpeer.All_peers
-	//var temp_peers []qpeer.Lpeer
 
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
@@ -34,24 +68,6 @@ func main(){
 	}
 	defer srv.Close()
 
-	for {
-		conn, err := srv.Accept()
-		if err != nil{
-			panic(err)
-		}
-		buffer := make([]byte, 2048)
+	go Server(srv, lpeer, privkey, pubkey_pem)
 
-		n, read_err := conn.Read(buffer)
-		if read_err != nil {
-			log.Fatal(read_err)
-		}
-		
-		var setup qpeer.Qpeer
-		json.Unmarshal(buffer[:n], &setup)
-		fmt.Println(setup.Peerid)
-		all_peers = qpeer.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem, setup.Peerid)
-		fmt.Println(all_peers)
-	}
-
-	//all_peers = qpeer.Client_setup(all_peers, lpeer, "localhost", "1691", pubkey_pem)
 }
