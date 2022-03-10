@@ -430,7 +430,7 @@ func Dkenc_lpeer(kenc_lpeer string, AES_key string) Lpeer {
 
 // MsgTypes
 
-type Qpeer struct 
+type Firstmsg struct 
 {
 	Msgtype string `json:"msgtype"`
 	Peerid string `json:"peerid"`
@@ -442,14 +442,14 @@ type Init struct
 	Pubkey_pem string `json:"pubkey"`
 }
 
-func Setup(peerid string) Qpeer {
-	qpeer_msg := Qpeer{"setup", peerid}
+func Setup(peerid string) Firstmsg {
+	qpeer_msg := Firstmsg{"setup", peerid}
 
 	return qpeer_msg
 } 
 
-func Exchange_peers(peerid string) Qpeer {
-	exchange_peers_msg := Qpeer{"exchange_peers", peerid}
+func Exchange_peers(peerid string) Firstmsg {
+	exchange_peers_msg := Firstmsg{"exchange_peers", peerid}
 
 	return exchange_peers_msg
 }
