@@ -138,6 +138,9 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 
 }
 
+func Is_Stop(){
+	
+}
 // Peer setup
 
 func Getmyip() string {
@@ -559,7 +562,6 @@ func Getback_peer(peerid string, all_peers All_peers) All_peers{
 		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
 
 		Write_peers(all_peers)
-		return all_peers
 	}
 
 	return all_peers

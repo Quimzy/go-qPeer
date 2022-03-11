@@ -11,6 +11,8 @@ import("github.com/Quimzy/go-qPeer/qpeer"
 	"time"
 	"fmt"
 	"sync"
+    "os/signal"
+    "syscall"
 )
 
 func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
@@ -75,7 +77,6 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 
 		switch len(all_peers.Peers){
 		case 0:
-			fmt.Println("Bootstrap")
 			qpeer.Client_bootstrap(all_peers, lpeer, privkey, "", "", "") // Change AES_key, peerip, port respectively. AES_key should be the same as what's set in the bootsrap node
 		default:
 			var temp_peers []qpeer.Lpeer
@@ -84,7 +85,6 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 			}
 			switch len(temp_peers){
 			case 0:
-				fmt.Println("Exchange_peers")
 				rand.Seed(time.Now().UnixNano())
 				enc_peer := all_peers.Peers[rand.Intn(len(all_peers.Peers))]
 				peer := qpeer.Decrypt_peer(enc_peer.Peerid, privkey, all_peers.Peers)
@@ -93,10 +93,10 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 				json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 				err := qpeer.Client_exchange_peers(all_peers, lpeer, privkey, peer.AES_key, peerinfo.Peerip, peerinfo.Port)
 				if err != nil{
-					all_peers = qpeer.Remove_peer(peer.Peerid, all_peers)			}
+					all_peers = qpeer.Remove_peer(peer.Peerid, all_peers)			
+				}
 
 			default:
-				fmt.Println("Setup")
 				temp_peer := temp_peers[rand.Intn(len(temp_peers))]
 				qpeer.Client_setup(all_peers, lpeer, temp_peer.Peerip, temp_peer.Port, pubkey_pem)
 			}
@@ -104,20 +104,62 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 	}
 }
 
-func main(){
+func Ping(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
+	for {
+		var all_peers qpeer.All_peers
+		if _, err := os.Stat("peers.json"); err == nil{
+			all_peers = qpeer.Read_peers()
+		}
+		if len(all_peers.Peers) > 0{
+			rand.Seed(time.Now().UnixNano())
+			enc_peer := all_peers.Peers[rand.Intn(len(all_peers.Peers))]
+			peer := qpeer.Decrypt_peer(enc_peer.Peerid, privkey, all_peers.Peers)
 
+			qpeer.Client_ping(all_peers, peer.Peerid, privkey)
+		}
+	}
+}
+
+func Getback(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
+	for {
+		var all_peers qpeer.All_peers
+		if _, err := os.Stat("peers.json"); err == nil{
+			all_peers = qpeer.Read_peers()
+		}
+		if len(all_peers.Offline_peers) > 0{
+			rand.Seed(time.Now().UnixNano())
+			enc_peer := all_peers.Offline_peers[rand.Intn(len(all_peers.Offline_peers))]
+			peer := qpeer.Decrypt_peer(enc_peer.Peerid, privkey, all_peers.Offline_peers)
+
+			qpeer.Client_getback(all_peers, peer.Peerid, privkey)
+		}
+	}
+}
+
+func main(){
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
 	lpeer := qpeer.Set_lpeer(pubkey_pem)
 	
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(4)
+
 	go Client(lpeer, privkey, pubkey_pem, &wg)
-	
 	go Server(lpeer, privkey, pubkey_pem, &wg)
-		
+	go Ping(privkey, &wg)
+	go Getback(privkey, &wg)
+	
+	c := make(chan os.Signal)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        err := os.Remove("temp_peers")
+        if err != nil{
+        	log.Fatal(err)
+        }
+        os.Exit(1)
+    }()
+
 	wg.Wait()
-
-
 }
