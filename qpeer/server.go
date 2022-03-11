@@ -140,7 +140,7 @@ func Server_bootstrap(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peer
 		log.Fatal("Peer doesn't have the right AES_key")
 	}
 
-	temp_peer := send_temp_peers_server(conn, privkey, temp_peers, AES_key)
+	temp_peer := send_temp_peers_server(conn, privkey, Return_temp_peers_bootstrap(privkey, temp_peers), AES_key)
 	Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
 
 	Send_bye(conn)

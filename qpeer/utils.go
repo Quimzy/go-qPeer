@@ -593,6 +593,27 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	return temp_peers
 }
 
+func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer{
+	var temp_peers []Lpeer
+	
+	if len(all_temp_peers) <= 5{
+		for _, temp_peer := range all_temp_peers {
+			temp_peers = append(temp_peers, temp_peer)
+		}
+	}else{
+		for i := 1; i<=5; i++ {
+			random.Seed(time.Now().UnixNano())
+			temp_peer := all_temp_peers[random.Intn(len(all_temp_peers))]
+			switch Check_temp_peers(temp_peer.Peerid, temp_peers){
+			case false:
+				temp_peers = append(temp_peers, temp_peer)
+			}
+		}
+	}
+
+	return temp_peers
+}
+
 func Write_temp_peers(temp_peers []Lpeer){
 	jsonified_temp_peers, err := json.Marshal(temp_peers)
 	if err != nil{
@@ -644,12 +665,5 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 }
 
 /*
-Save_temp_peers writes to a temp_peers file, that gets deleted when qPeer stops
-Other functions that require temp_peers, read from that file
-Detect CTRL+C, delete temp_peers
-
-Random pick of peer:
-math/rand generate random number between (0, len(peers)) = index
-peer = all_peers.Peers[index]
-
+Bootstrap exchange temp_peers should only send 5 peers (maximum) at a time
 */
