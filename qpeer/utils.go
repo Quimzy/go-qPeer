@@ -120,8 +120,8 @@ func Find_peer(peerid string, peers []Peer) string{
 			break
 		}
 	}
+	
 	return ""
-
 }
 
 func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
@@ -134,8 +134,8 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 			return string(jsonified_peer)
 		}
 	}
+	
 	return ""
-
 }
 
 // Peer setup
@@ -146,6 +146,7 @@ func Getmyip() string {
 		log.Fatal(err)
 	}
 	ip, _ := ioutil.ReadAll(req.Body)
+	
 	return string(ip)
 }
 
@@ -543,6 +544,7 @@ func Remove_peer(peerid string, all_peers All_peers) All_peers{
 		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
 		
 		all_peers.Peers[Index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
+		all_peers.Peers = all_peers.Peers[:len(all_peers.Peers)-1]
 		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
 		
 		Write_peers(all_peers)
@@ -555,7 +557,9 @@ func Getback_peer(peerid string, all_peers All_peers) All_peers{
 	if (Check_peer(peerid, all_peers.Peers) == false && Check_peer(peerid, all_peers.Offline_peers) == true){
 		var del_peer Peer
 		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
+		
 		all_peers.Offline_peers[Index(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1]  //Remove peer from offline_peer
+		all_peers.Offline_peers = all_peers.Offline_peers[:len(all_peers.Offline_peers)-1]
 		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
 
 		Write_peers(all_peers)

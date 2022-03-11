@@ -136,7 +136,7 @@ func Getback(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 	}
 }
 
-func main(){
+func Node(){
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
