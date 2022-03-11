@@ -9,16 +9,15 @@ import("github.com/Quimzy/go-qPeer/qpeer"
 	"log"
 	"math/rand"
 	"time"
-	"fmt"
 	"sync"
-    "os/signal"
-    "syscall"
+	"os/signal"
+	"syscall"
 )
 
 func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
 	defer wg.Done()
 	
-	addr := "localhost:1691"
+	addr := ":1691"
 
 	srv, err := net.Listen("tcp", addr)
 	if err != nil{
@@ -31,8 +30,7 @@ func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 	    if err != nil {
 	        log.Fatal(err)
 	    }
-	    fmt.Println(conn)
-	        	
+
 	    buffer := make([]byte, 2048)
 		
 		n, read_err := conn.Read(buffer)
@@ -151,15 +149,15 @@ func Node(){
 	go Getback(privkey, &wg)
 	
 	c := make(chan os.Signal)
-    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-    go func() {
-        <-c
-        err := os.Remove("temp_peers")
-        if err != nil{
-        	log.Fatal(err)
-        }
-        os.Exit(1)
-    }()
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+	    <-c
+	    err := os.Remove("temp_peers")
+	    if err != nil{
+	    	log.Fatal(err)
+	    }
+	    os.Exit(1)
+	}()
 
 	wg.Wait()
 }

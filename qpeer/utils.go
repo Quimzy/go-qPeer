@@ -410,7 +410,7 @@ func Dkenc_verify(enc_msg string, key string) string{
 }
 
 func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
-	jsonified_lpeer, err := json.Marshal(lpeer) 
+	jsonified_lpeer, err := json.Marshal([]Lpeer{lpeer}) 
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -419,11 +419,11 @@ func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
 	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer))
 }
 
-func Dkenc_lpeer(kenc_lpeer string, AES_key string) Lpeer {
+func Dkenc_lpeer(kenc_lpeer string, AES_key string) []Lpeer {
 	b64dec_lpeer, _ := base64.StdEncoding.DecodeString(kenc_lpeer) 
 	kdec_lpeer := AES_decrypt(string(b64dec_lpeer), AES_key) //Decrypting lpeer with Key
 	
-	var lpeer Lpeer
+	var lpeer []Lpeer
 	json.Unmarshal([]byte(kdec_lpeer), &lpeer)
 
 	return lpeer
@@ -557,7 +557,7 @@ func Getback_peer(peerid string, all_peers All_peers) All_peers{
 	if (Check_peer(peerid, all_peers.Peers) == false && Check_peer(peerid, all_peers.Offline_peers) == true){
 		var del_peer Peer
 		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
-		
+
 		all_peers.Offline_peers[Index(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1]  //Remove peer from offline_peer
 		all_peers.Offline_peers = all_peers.Offline_peers[:len(all_peers.Offline_peers)-1]
 		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
@@ -622,14 +622,19 @@ func Share_temp_peers(temp_peers []Lpeer, AES_key string) string {
 }
 
 func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer){
-	var temp_peers []Lpeer
+	var recvd_temp_peers []Lpeer
 	
 	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
-	json.Unmarshal([]byte(AES_decrypt(string(b64dec_enc_temp_peers), AES_key)), &temp_peers)
+	json.Unmarshal([]byte(AES_decrypt(string(b64dec_enc_temp_peers), AES_key)), &recvd_temp_peers)
 
-	for _, temp_peer := range temp_peers{
-		if temp_peer != lpeer{
-			if Check_peer(temp_peer.Peerid, all_peers.Peers) == false || Check_peer(temp_peer.Peerid, all_peers.Offline_peers) == false || Check_temp_peers(temp_peer.Peerid, temp_peers) == false{
+	var temp_peers []Lpeer
+	if _, err := os.Stat("temp_peers"); err == nil{
+		temp_peers = Read_temp_peers()
+	}
+
+	for _, temp_peer := range recvd_temp_peers{
+		if temp_peer.Peerid != lpeer.Peerid{
+			if Check_peer(temp_peer.Peerid, all_peers.Peers) == false && Check_peer(temp_peer.Peerid, all_peers.Offline_peers) == false && Check_temp_peers(temp_peer.Peerid, temp_peers) == false{
 				temp_peers = append(temp_peers, temp_peer)		
 			}
 		}
