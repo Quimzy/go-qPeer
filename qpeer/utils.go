@@ -138,9 +138,6 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 
 }
 
-func Is_Stop(){
-	
-}
 // Peer setup
 
 func Getmyip() string {
