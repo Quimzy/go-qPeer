@@ -1,3 +1,3 @@
 tmp/
 *.json
-test.go
+temp_peers

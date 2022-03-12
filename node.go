@@ -75,7 +75,21 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 
 		switch len(all_peers.Peers){
 		case 0:
-			qpeer.Client_bootstrap(all_peers, lpeer, privkey, "", "", "") // Change AES_key, peerip, port respectively. AES_key should be the same as what's set in the bootsrap node
+			AES_key := ""
+			peerip := ""
+
+			qpeer.Client_bootstrap(all_peers, lpeer, privkey, AES_key, peerip, "1691") // Change AES_key, peerip, port respectively. AES_key should be the same as what's set in the bootsrap node
+			temp_peers := qpeer.Read_temp_peers()
+			
+			switch len(temp_peers){
+			case 0:
+				qpeer.Client_bootstrap(all_peers, lpeer, privkey, AES_key, peerip, "1691")
+			default:
+				rand.Seed(time.Now().UnixNano())
+				temp_peer := temp_peers[rand.Intn(len(temp_peers))]
+				qpeer.Client_setup(all_peers, lpeer, temp_peer.Peerip, temp_peer.Port, pubkey_pem)
+			}
+			
 		default:
 			var temp_peers []qpeer.Lpeer
 			if _, err := os.Stat("temp_peers"); err == nil{
@@ -95,6 +109,7 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 				}
 
 			default:
+				rand.Seed(time.Now().UnixNano())
 				temp_peer := temp_peers[rand.Intn(len(temp_peers))]
 				qpeer.Client_setup(all_peers, lpeer, temp_peer.Peerip, temp_peer.Port, pubkey_pem)
 			}

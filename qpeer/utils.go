@@ -419,16 +419,6 @@ func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
 	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer))
 }
 
-func Dkenc_lpeer(kenc_lpeer string, AES_key string) []Lpeer {
-	b64dec_lpeer, _ := base64.StdEncoding.DecodeString(kenc_lpeer) 
-	kdec_lpeer := AES_decrypt(string(b64dec_lpeer), AES_key) //Decrypting lpeer with Key
-	
-	var lpeer []Lpeer
-	json.Unmarshal([]byte(kdec_lpeer), &lpeer)
-
-	return lpeer
-}
-
 // MsgTypes
 
 type Firstmsg struct 
@@ -593,7 +583,7 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer{
 	return temp_peers
 }
 
-func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer{
+func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer{ //Share from temp_peers file
 	var temp_peers []Lpeer
 	
 	if len(all_temp_peers) <= 5{
