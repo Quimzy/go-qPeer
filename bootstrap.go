@@ -1,0 +1,53 @@
+
+package main
+
+import("github.com/Quimzy/go-qPeer/qpeer"
+	"os"
+	"net"
+	"log"
+	"encoding/json"
+)
+
+func Bootstrap(){
+	privkey, pubkey := qpeer.Set_RSA_Keys()
+	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
+
+	AES_key := "01237ab8ecd80c330bb50709c6a1e099"
+	lpeer := qpeer.Set_lpeer(pubkey_pem)
+
+	addr := ":1691"
+	srv, err := net.Listen("tcp", addr)
+	if err != nil{
+		log.Fatal(err)
+	}
+	defer srv.Close()
+	
+	for{
+		conn, err := srv.Accept()
+	    if err != nil {
+	        log.Fatal(err)
+	    }
+
+	    buffer := make([]byte, 2048)
+		
+		n, read_err := conn.Read(buffer)
+		if read_err != nil {
+			log.Fatal(read_err)
+		}
+				
+		var firstmsg qpeer.Firstmsg
+		json.Unmarshal(buffer[:n], &firstmsg)
+	   
+	    var all_peers qpeer.All_peers
+	    var temp_peers []qpeer.Lpeer
+		if _, err := os.Stat("temp_peers"); err == nil{
+			temp_peers = qpeer.Read_temp_peers()
+		}
+
+		go qpeer.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
+	}
+}
+
+func main(){
+	Bootstrap()
+}
