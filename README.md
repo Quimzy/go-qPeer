@@ -6,6 +6,6 @@
 
 ## TODO
 
-- [] Portforwarding-lib: Stun & UPnP
-- [] Error Handling
-- [] Logging (without saving to file)
+- [ ] Portforwarding-lib: Stun & UPnP
+- [ ] Error Handling
+- [ ] Logging (without saving to file)
