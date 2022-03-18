@@ -1,0 +1,6 @@
+github.com/pixelbender/go-stun v0.0.0-20170612184125-229529726602 h1:Ie24U6KTou4iPLqy2Gxb8jJ1OcRGlJrSO1OOP544f7M=
+github.com/pixelbender/go-stun v0.0.0-20170612184125-229529726602/go.mod h1:B3t0Mgd98sT0nx3r3WepMLtL/TiP2/CdJbxldJsv604=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+gortc.io/stun v1.23.0 h1:CpRQFjakCZMwVKTwInKbcCzlBklj62LGzD3NPdFyGrE=
+gortc.io/stun v1.23.0/go.mod h1:XD5lpONVyjvV3BgOyJFNo0iv6R2oZB4L+weMqxts+zg=
