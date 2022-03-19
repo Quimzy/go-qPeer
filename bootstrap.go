@@ -12,7 +12,7 @@ func Bootstrap(){
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
-	AES_key := "01237ab8ecd80c330bb50709c6a1e099"
+	AES_key := "" //Set AES_key for bootstrap node
 	lpeer := qpeer.Set_lpeer(pubkey_pem)
 
 	addr := ":1691"
