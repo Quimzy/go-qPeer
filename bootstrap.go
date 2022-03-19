@@ -47,7 +47,3 @@ func Bootstrap(){
 		go qpeer.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
 	}
 }
-
-func main(){
-	Bootstrap()
-}
