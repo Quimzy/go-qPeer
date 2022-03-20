@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quimzy/go-qPeer/qpeer"
+import("github.com/Quirk-io/go-qPeer/qpeer"
 	"os"
 	"net"
 	"log"
