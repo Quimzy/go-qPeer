@@ -9,3 +9,4 @@
 - [ ] Portforwarding-lib: Stun & UPnP
 - [ ] Error Handling
 - [ ] Logging (without saving to file)
+- [ ] Adding tests
