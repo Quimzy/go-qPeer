@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quimzy/go-qPeer/qpeer"
+import("github.com/Quirk-io/go-qPeer/qpeer"
 	"os"
 	"encoding/json"
 	"net"
@@ -71,10 +71,12 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 		var all_peers qpeer.All_peers
 		if _, err := os.Stat("peers.json"); err == nil{
 			all_peers = qpeer.Read_peers()
+			log.Println("Retrieving peers from db")
 		}
 
 		switch len(all_peers.Peers){
 		case 0:
+			log.Println("Bootstrapping to join the network")
 			AES_key := ""
 			peerip := ""
 
@@ -91,6 +93,7 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 			}
 			
 		default:
+			log.Println("Discovering more peers in the network")
 			var temp_peers []qpeer.Lpeer
 			if _, err := os.Stat("temp_peers"); err == nil{
 				temp_peers = qpeer.Read_temp_peers()
@@ -154,7 +157,6 @@ func Node(){
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
 	lpeer := qpeer.Set_lpeer(pubkey_pem)
-	
 	var wg sync.WaitGroup
 	wg.Add(4)
 
