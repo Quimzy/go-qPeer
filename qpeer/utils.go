@@ -656,4 +656,5 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 
 /*
 Bootstrap exchange temp_peers should only send 5 peers (maximum) at a time
+Ip, port should change to an array of public endpoint and private endpoint
 */
