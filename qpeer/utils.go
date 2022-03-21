@@ -291,7 +291,7 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 
 		Write_lpeer(lpeer)	
 	}
-	log.Println("Your peerid is: %s", lpeer.Peerid)
+	log.Println("Your peerid is:", lpeer.Peerid)
 	return lpeer
 }
 

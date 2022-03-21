@@ -76,7 +76,6 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 
 		switch len(all_peers.Peers){
 		case 0:
-			log.Println("Bootstrapping to join the network")
 			AES_key := ""
 			peerip := ""
 
@@ -93,7 +92,6 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 			}
 			
 		default:
-			log.Println("Discovering more peers in the network")
 			var temp_peers []qpeer.Lpeer
 			if _, err := os.Stat("temp_peers"); err == nil{
 				temp_peers = qpeer.Read_temp_peers()
@@ -153,6 +151,7 @@ func Getback(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 }
 
 func Node(){
+	log.Println("qPeer node started")
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
