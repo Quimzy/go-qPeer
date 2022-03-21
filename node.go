@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quimzy/go-qPeer/qpeer"
+import("github.com/Quirk-io/go-qPeer/qpeer"
 	"os"
 	"encoding/json"
 	"net"
@@ -71,6 +71,7 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 		var all_peers qpeer.All_peers
 		if _, err := os.Stat("peers.json"); err == nil{
 			all_peers = qpeer.Read_peers()
+			log.Println("Retrieving peers from db")
 		}
 
 		switch len(all_peers.Peers){
@@ -150,11 +151,11 @@ func Getback(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 }
 
 func Node(){
+	log.Println("qPeer node started")
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
 	lpeer := qpeer.Set_lpeer(pubkey_pem)
-	
 	var wg sync.WaitGroup
 	wg.Add(4)
 

@@ -214,6 +214,7 @@ func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rs
 }
 
 func RSA_Writekeys(keys RSA_Keys) {
+	log.Println("Saving RSA_keys to keys.json")
 	jsonified_keys, err := json.MarshalIndent(keys, "", " ")
 	if err != nil {
 		log.Fatal(err)
@@ -222,6 +223,7 @@ func RSA_Writekeys(keys RSA_Keys) {
 }
 
 func RSA_Readkeys() RSA_Keys {
+	log.Println("Retrieving RSA_keys from keys.json")
 	reader, err := ioutil.ReadFile("keys.json")
 	if err != nil {
 		log.Fatal(err)
@@ -239,6 +241,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey) {
 		return RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
 	} else {
 		var keys RSA_Keys
+		log.Println("Generating RSA_keys")
 		privkey, pubkey := RSA_keygen()
 		keys = RSA_ExportKeys(privkey, pubkey)
 		RSA_Writekeys(keys)
@@ -248,6 +251,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey) {
 }
 
 func Read_lpeer() Lpeer {
+	log.Println("Retrieving lpeer from lpeer.json")
 	reader, err := ioutil.ReadFile("lpeer.json")
 	if err != nil {
 		log.Fatal(err)
@@ -258,6 +262,7 @@ func Read_lpeer() Lpeer {
 }
 
 func Write_lpeer(lpeer Lpeer) {
+	log.Println("Saving lpeer to lpeer.json")
 	jsonified_lpeer, err := json.Marshal(lpeer)
 	if err != nil {
 		log.Fatal(err)
@@ -266,19 +271,17 @@ func Write_lpeer(lpeer Lpeer) {
 }
 
 func Set_lpeer(pubkey_pem string) Lpeer {
+	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil{
-		var lpeer Lpeer
 		lpeer = Read_lpeer()
 		if lpeer.Peerip != Getmyip() { //If public ip has changed
 			lpeer.Peerip = Getmyip()
 			Write_lpeer(lpeer)
 		}
-		return lpeer
 	} else{
-		var lpeer Lpeer
+		log.Println("Generating lpeer")
 
 		//Generating Peerid
-		
 		lpeer.Peerid = Sha1_encrypt(pubkey_pem)
 
 		//Setting the rest of the variables
@@ -286,9 +289,10 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 		lpeer.Peerip = Getmyip()
 		lpeer.Port = "1691"
 
-		Write_lpeer(lpeer)
-		return lpeer
+		Write_lpeer(lpeer)	
 	}
+	log.Println("Your peerid is:", lpeer.Peerid)
+	return lpeer
 }
 
 // Encryption Functions

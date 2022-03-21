@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quimzy/go-qPeer/qpeer"
+import("github.com/Quirk-io/go-qPeer/qpeer"
 	"os"
 	"net"
 	"log"
@@ -9,10 +9,12 @@ import("github.com/Quimzy/go-qPeer/qpeer"
 )
 
 func Bootstrap(){
+	log.Println("qPeer bootstrap node started")
 	privkey, pubkey := qpeer.Set_RSA_Keys()
 	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
 
 	AES_key := "" //Set AES_key for bootstrap node
+	log.Println("AES_key:", AES_key)
 	lpeer := qpeer.Set_lpeer(pubkey_pem)
 
 	addr := ":1691"

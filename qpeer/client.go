@@ -229,8 +229,8 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 	defer conn.Close()
 
 	kenc_verify := greet_exchange_peers(conn, lpeer.Peerid)
-	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
 
+	dkenc_verify := Dkenc_verify(kenc_verify, AES_key)
 	enc_temp_peers := send_dkenc_verify(conn, dkenc_verify)
 	Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
 
@@ -240,7 +240,6 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 	if bye != "bye"{//Improve this with better error handling
 		log.Fatal("Bye wasn't received")
 	}
-
 }
 
 // Ping
