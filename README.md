@@ -1,4 +1,5 @@
 # go-qPeer
+![Tests](https://github.com/Quirk-io/go-qPeer/workflows/Tests/badge.svg)
 
 <b>Forget python, Go for the win (for distributed systems)</b>
 
