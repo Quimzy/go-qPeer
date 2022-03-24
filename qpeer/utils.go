@@ -30,7 +30,6 @@ type RSA_Keys struct
 type Lpeer struct
 {
 	Peerid string `json:"peerid"`
-	Role int `json:"role"`
 	Peerip string `json:"peerip"`
 	Port string `json:"port"`
 }
@@ -50,7 +49,6 @@ type Peer struct
 
 type Peerinfo struct
 {
-	Role int 
 	Peerip string 
 	Port string 
 	RSA_Pubkey string
@@ -285,7 +283,6 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 		lpeer.Peerid = Sha1_encrypt(pubkey_pem)
 
 		//Setting the rest of the variables
-		lpeer.Role = 0
 		lpeer.Peerip = Getmyip()
 		lpeer.Port = "1691"
 
@@ -457,8 +454,8 @@ func Init_enc(peerid string, pubkey_pem string) Init {
 
 // Generating peerinfo
 
-func peerinfo(role int, peerip string, port string, pubkey_pem string) Peerinfo {
-	peerinfo := Peerinfo{role, peerip, port, pubkey_pem}
+func peerinfo(peerip string, port string, pubkey_pem string) Peerinfo {
+	peerinfo := Peerinfo{peerip, port, pubkey_pem}
 
 	return peerinfo
 }
@@ -525,7 +522,7 @@ func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 	
-	temp_peer := Lpeer{peer.Peerid, peerinfo.Role, peerinfo.Peerip, peerinfo.Port}
+	temp_peer := Lpeer{peer.Peerid, peerinfo.Peerip, peerinfo.Port}
 
 	return temp_peer
 }

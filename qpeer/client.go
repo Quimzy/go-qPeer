@@ -53,7 +53,7 @@ func send_key(conn net.Conn, AES_key string, pubkey *rsa.PublicKey) string{
 }
 
 func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string) string{
-	lpeerinfo := peerinfo(lpeer.Role, lpeer.Peerip, lpeer.Port, pubkey_pem)
+	lpeerinfo := peerinfo(lpeer.Peerip, lpeer.Port, pubkey_pem)
 	kenc_lpeerinfo := Kenc_peerinfo(lpeerinfo, AES_key)
 
 	_, write_err := conn.Write([]byte(kenc_lpeerinfo))
