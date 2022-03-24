@@ -1,5 +1,5 @@
 # go-qPeer
-![Tests](https://github.com/Quirk-io/go-qPeer/actions/workflows/go.yml/badge.svg)
+![Tests](https://github.com/Quirk-io/go-qPeer/actions/workflows/testing.yml/badge.svg)
 
 <b>Forget python, Go for the win (for distributed systems)</b>
 
