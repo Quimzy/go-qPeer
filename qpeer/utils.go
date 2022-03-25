@@ -226,6 +226,7 @@ func RSA_Readkeys() RSA_Keys {
 	if err != nil {
 		log.Fatal(err)
 	}
+	
 	var keys RSA_Keys
 	json.Unmarshal([]byte(reader), &keys)
 
@@ -237,6 +238,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey) {
 		var keys RSA_Keys
 		keys = RSA_Readkeys()
 		return RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
+	
 	} else {
 		var keys RSA_Keys
 		log.Println("Generating RSA_keys")
@@ -256,6 +258,7 @@ func Read_lpeer() Lpeer {
 	}
 	var lpeer Lpeer
 	json.Unmarshal([]byte(reader), &lpeer)
+	
 	return lpeer
 }
 
@@ -288,6 +291,7 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 
 		Write_lpeer(lpeer)	
 	}
+	
 	log.Println("Your peerid is:", lpeer.Peerid)
 	return lpeer
 }
