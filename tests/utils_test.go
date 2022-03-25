@@ -42,3 +42,9 @@ func TestRSA_keygen(t *testing.T){
 	}
 }
 
+func TestRSA_Readkeys(t *testing.T){
+	keys := qpeer.RSA_Readkeys()
+	if fmt.Sprintf("%T", keys) != "qpeer.RSA_Keys"{
+		t.Errorf("RSA error. The keys stored are not the correct type")
+	}
+}
