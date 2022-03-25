@@ -1,9 +1,6 @@
 name: Go
 
-on: 
-  push:
-    - master
-    - dev
+on: push
 
 jobs:
 
