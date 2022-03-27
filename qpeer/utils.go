@@ -86,18 +86,6 @@ func Index(peers []Peer, peer Peer) int{
     return -1
 }
 
-func GetPrivateIp() string {
-    conn, err := net.Dial("udp", "8.8.8.8:80")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
-
-    localAddr := conn.LocalAddr().(*net.UDPAddr).IP
-
-    return localAddr.String()
-}
-
 func Check_peer(peerid string, peers []Peer) bool {
 	for _, n_peer := range peers{
 		if n_peer.Peerid == peerid{
