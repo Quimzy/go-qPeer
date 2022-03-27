@@ -6,6 +6,7 @@ import ("encoding/json"
 	"time"
 	"log"
 	"fmt"
+	"net"
 	"os"
 	random "math/rand"
 	"net/http"
@@ -83,6 +84,18 @@ func Index(peers []Peer, peer Peer) int{
         }
     }
     return -1
+}
+
+func GetPrivateIp() string {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer conn.Close()
+
+    localAddr := conn.LocalAddr().(*net.UDPAddr).String()
+
+    return localAddr
 }
 
 func Check_peer(peerid string, peers []Peer) bool {
