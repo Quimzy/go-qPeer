@@ -93,9 +93,9 @@ func GetPrivateIp() string {
     }
     defer conn.Close()
 
-    localAddr := conn.LocalAddr().(*net.UDPAddr).String()
+    localAddr := conn.LocalAddr().(*net.UDPAddr).IP
 
-    return localAddr
+    return localAddr.String()
 }
 
 func Check_peer(peerid string, peers []Peer) bool {

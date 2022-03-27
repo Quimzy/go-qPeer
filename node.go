@@ -177,3 +177,8 @@ func Node(){
 
 	wg.Wait()
 }
+
+func main(){
+	log.Println(qpeer.GetPrivateIp())
+
+}
