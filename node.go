@@ -2,6 +2,7 @@
 package main
 
 import("github.com/Quirk-io/go-qPeer/qpeer"
+	"github.com/Quirk-io/go-qPeer/utils"
 	"os"
 	"encoding/json"
 	"net"
@@ -14,7 +15,7 @@ import("github.com/Quirk-io/go-qPeer/qpeer"
 	"syscall"
 )
 
-func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
+func Server(lpeer utils.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
 	defer wg.Done()
 	
 	addr := ":1691"
@@ -38,7 +39,7 @@ func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 			log.Fatal(read_err)
 		}
 				
-		var firstmsg qpeer.Firstmsg
+		var firstmsg utils.Firstmsg
 		json.Unmarshal(buffer[:n], &firstmsg)	
 		
 		switch firstmsg.Msgtype{
@@ -50,7 +51,7 @@ func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 
 			qpeer.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem, firstmsg.Peerid)
 		case "exchange_peers":
-			var temp_peers []qpeer.Lpeer
+			var temp_peers []utils.Lpeer
 			if _, err := os.Stat("temp_peers"); err == nil{
 				temp_peers = qpeer.Read_temp_peers()
 			}
@@ -64,11 +65,11 @@ func Server(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 	}
 }
 
-func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
+func Client(lpeer utils.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *sync.WaitGroup){
 	defer wg.Done()
 	
 	for {
-		var all_peers qpeer.All_peers
+		var all_peers utils.All_peers
 		if _, err := os.Stat("peers.json"); err == nil{
 			all_peers = qpeer.Read_peers()
 			log.Println("Retrieving peers from db")
@@ -92,7 +93,7 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 			}
 			
 		default:
-			var temp_peers []qpeer.Lpeer
+			var temp_peers []utils.Lpeer
 			if _, err := os.Stat("temp_peers"); err == nil{
 				temp_peers = qpeer.Read_temp_peers()
 			}
@@ -120,7 +121,7 @@ func Client(lpeer qpeer.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg *s
 
 func Ping(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 	for {
-		var all_peers qpeer.All_peers
+		var all_peers utils.All_peers
 		if _, err := os.Stat("peers.json"); err == nil{
 			all_peers = qpeer.Read_peers()
 		}
@@ -136,7 +137,7 @@ func Ping(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 
 func Getback(privkey *rsa.PrivateKey, wg *sync.WaitGroup){
 	for {
-		var all_peers qpeer.All_peers
+		var all_peers utils.All_peers
 		if _, err := os.Stat("peers.json"); err == nil{
 			all_peers = qpeer.Read_peers()
 		}

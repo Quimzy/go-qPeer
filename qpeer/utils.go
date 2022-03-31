@@ -1,5 +1,5 @@
 
-package qpeer
+package utils
 
 import ("encoding/json"
 	"io/ioutil"
@@ -19,6 +19,7 @@ import ("encoding/json"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"github.com/Quirk-io/Endpoint/stun"
 )
 
 type RSA_Keys struct 
@@ -30,8 +31,7 @@ type RSA_Keys struct
 type Lpeer struct
 {
 	Peerid string `json:"peerid"`
-	Peerip string `json:"peerip"`
-	Port string `json:"port"`
+	Endpoints stun.Endpoints `json:"endpoints"`
 }
 
 type All_peers struct
@@ -49,8 +49,7 @@ type Peer struct
 
 type Peerinfo struct
 {
-	Peerip string 
-	Port string 
+	Endpoints stun.Endpoints
 	RSA_Pubkey string
 }
 

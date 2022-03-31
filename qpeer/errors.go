@@ -1,5 +1,5 @@
 
-package qpeer
+package errors
 
 type GreetError struct{}
 
