@@ -1,5 +1,5 @@
 
-package utils
+package lib
 
 import ("encoding/json"
 	"io/ioutil"
@@ -8,7 +8,6 @@ import ("encoding/json"
 	"fmt"
 	"os"
 	random "math/rand"
-	"net/http"
     "crypto"
 	"crypto/sha1"
 	"crypto/md5"
@@ -137,16 +136,6 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) string{
 
 // Peer setup
 
-func Getmyip() string {
-	req, err := http.Get("https://api.ipify.org")
-	if err != nil {
-		log.Fatal(err)
-	}
-	ip, _ := ioutil.ReadAll(req.Body)
-	
-	return string(ip)
-}
-
 func RSA_keygen() (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pubkey := &privkey.PublicKey
@@ -270,12 +259,12 @@ func Write_lpeer(lpeer Lpeer) {
 	_  = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 }
 
-func Set_lpeer(pubkey_pem string) Lpeer {
+func Set_lpeer(pubkey_pem string, endpoints stun.Endpoints) Lpeer {
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil{
 		lpeer = Read_lpeer()
-		if lpeer.Peerip != Getmyip() { //If public ip has changed
-			lpeer.Peerip = Getmyip()
+		if lpeer.Endpoints != endpoints { //If public ip has changed
+			lpeer.Endpoints = endpoints
 			Write_lpeer(lpeer)
 		}
 	} else{
@@ -285,8 +274,7 @@ func Set_lpeer(pubkey_pem string) Lpeer {
 		lpeer.Peerid = Sha1_encrypt(pubkey_pem)
 
 		//Setting the rest of the variables
-		lpeer.Peerip = Getmyip()
-		lpeer.Port = "1691"
+		lpeer.Endpoints = endpoints
 
 		Write_lpeer(lpeer)	
 	}
@@ -457,8 +445,8 @@ func Init_enc(peerid string, pubkey_pem string) Init {
 
 // Generating peerinfo
 
-func peerinfo(peerip string, port string, pubkey_pem string) Peerinfo {
-	peerinfo := Peerinfo{peerip, port, pubkey_pem}
+func peerinfo(endpoints stun.Endpoints, pubkey_pem string) Peerinfo {
+	peerinfo := Peerinfo{endpoints, pubkey_pem}
 
 	return peerinfo
 }
@@ -525,7 +513,7 @@ func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 	
-	temp_peer := Lpeer{peer.Peerid, peerinfo.Peerip, peerinfo.Port}
+	temp_peer := Lpeer{peer.Peerid, peerinfo.Endpoints}
 
 	return temp_peer
 }

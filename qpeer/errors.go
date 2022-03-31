@@ -1,5 +1,5 @@
 
-package errors
+package lib
 
 type GreetError struct{}
 

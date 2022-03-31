@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quirk-io/go-qPeer/qpeer"
+import("github.com/Quirk-io/go-qPeer/qpeer/udp"
 	"os"
 	"net"
 	"log"
@@ -37,11 +37,11 @@ func Bootstrap(){
 			log.Fatal(read_err)
 		}
 				
-		var firstmsg qpeer.Firstmsg
+		var firstmsg utils.Firstmsg
 		json.Unmarshal(buffer[:n], &firstmsg)
 	   
-	    var all_peers qpeer.All_peers
-	    var temp_peers []qpeer.Lpeer
+	    var all_peers utils.All_peers
+	    var temp_peers []utils.Lpeer
 		if _, err := os.Stat("temp_peers"); err == nil{
 			temp_peers = qpeer.Read_temp_peers()
 		}

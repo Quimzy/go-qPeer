@@ -6,12 +6,13 @@ import ("net"
 	"encoding/json"
 	"fmt"
 	"crypto/rsa"
+	"github.com/Quirk-io/go-qPeer/qpeer"
 )
 
 // Setup
 
-func greet_setup(conn net.Conn, peerid string) Init{
-	msg, err := json.Marshal(Setup(peerid))
+func greet_setup(conn net.Conn, peerid string) lib.Init{
+	msg, err := json.Marshal(lib.Setup(peerid))
 	if err != nil{
 		log.Fatal(err)
 	}
@@ -27,7 +28,7 @@ func greet_setup(conn net.Conn, peerid string) Init{
 		log.Fatal(read_err)
 	}
 
-	var init Init
+	var init lib.Init
 	json.Unmarshal(buffer[:n], &init)
 
 	return init
@@ -35,7 +36,7 @@ func greet_setup(conn net.Conn, peerid string) Init{
 }
 
 func send_key(conn net.Conn, AES_key string, pubkey *rsa.PublicKey) string{
-	enc_AES_key := Penc_AES(AES_key, pubkey)
+	enc_AES_key := lib.Penc_AES(AES_key, pubkey)
 
 	_, write_err := conn.Write([]byte(enc_AES_key))
 	if write_err != nil{
@@ -52,8 +53,8 @@ func send_key(conn net.Conn, AES_key string, pubkey *rsa.PublicKey) string{
 	return string(buffer[:n])
 }
 
-func send_peerinfo(conn net.Conn,lpeer Lpeer, pubkey_pem string, AES_key string) string{
-	lpeerinfo := peerinfo(lpeer.Peerip, lpeer.Port, pubkey_pem)
+func send_peerinfo(conn net.Conn,lpeer lib.Lpeer, pubkey_pem string, AES_key string) string{
+	lpeerinfo := lib.Peerinfo(lpeer.Peerip, lpeer.Port, pubkey_pem)
 	kenc_lpeerinfo := Kenc_peerinfo(lpeerinfo, AES_key)
 
 	_, write_err := conn.Write([]byte(kenc_lpeerinfo))
@@ -78,7 +79,7 @@ func Send_bye(conn net.Conn){
 	}
 }
 
-func Client_setup(all_peers All_peers, lpeer Lpeer, peerip string, port string, pubkey_pem string){
+func Client_setup(all_peers lib.All_peers, lpeer lib.Lpeer, peerip string, port string, pubkey_pem string){
 	pubkey := RSA_ImportPubkey(pubkey_pem)
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
@@ -154,7 +155,7 @@ func send_dkenc_verify(conn net.Conn, dkenc_verify string) string{
 	return string(buffer[:n])
 }
 
-func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_key string){
+func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []lib.Peer, AES_key string){
 	enc_temp_peers := Share_temp_peers(Return_temp_peers(privkey, peers), AES_key)
 	_, write_err := conn.Write([]byte(enc_temp_peers))
 	if write_err != nil{
@@ -173,7 +174,7 @@ func send_temp_peers(conn net.Conn, privkey *rsa.PrivateKey, peers []Peer, AES_k
 	}//Add panic(ByeError)
 }
 
-func Client_exchange_peers(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) error{
+func Client_exchange_peers(all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string) error{
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
@@ -217,7 +218,7 @@ func send_lpeer(conn net.Conn, kenc_lpeer string) string{
 	return string(buffer[:n])
 }
 
-func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string){
+func Client_bootstrap(all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.PrivateKey, AES_key string, peerip string, port string){
 
 	address := string(fmt.Sprintf("%s:%s", peerip, port))
 	protocol := "tcp"
@@ -244,7 +245,7 @@ func Client_bootstrap(all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey,
 
 // Ping
 
-func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey){
+func Client_ping(all_peers lib.All_peers, peerid string, privkey *rsa.PrivateKey){
 	peer := Decrypt_peer(peerid, privkey, all_peers.Peers)
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
@@ -263,7 +264,7 @@ func Client_ping(all_peers All_peers, peerid string, privkey *rsa.PrivateKey){
 
 // Getback
 
-func Client_getback(all_peers All_peers, peerid string, privkey *rsa.PrivateKey){
+func Client_getback(all_peers lib.All_peers, peerid string, privkey *rsa.PrivateKey){
 	peer := Decrypt_peer(peerid, privkey, all_peers.Offline_peers)
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
