@@ -443,14 +443,6 @@ func Init_enc(peerid string, pubkey_pem string) Init {
 	return init_msg
 }
 
-// Generating peerinfo
-
-func peerinfo(endpoints stun.Endpoints, pubkey_pem string) Peerinfo {
-	peerinfo := Peerinfo{endpoints, pubkey_pem}
-
-	return peerinfo
-}
-
 // Saving peer
 
 func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey, all_peers All_peers) All_peers {
@@ -520,7 +512,7 @@ func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 
 // Remove peer if its offline (or Get it back if it becomes online)
 
-func Remove_peer(peerid string, all_peers All_peers) All_peers{
+func Remove_peer(peerid string, all_peers All_peers){
 	if (Check_peer(peerid, all_peers.Peers) == true && Check_peer(peerid, all_peers.Offline_peers) == false){
 		var del_peer Peer
 		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
@@ -531,11 +523,9 @@ func Remove_peer(peerid string, all_peers All_peers) All_peers{
 		
 		Write_peers(all_peers)
 	}
-
-	return all_peers
 }
 
-func Getback_peer(peerid string, all_peers All_peers) All_peers{
+func Getback_peer(peerid string, all_peers All_peers){
 	if (Check_peer(peerid, all_peers.Peers) == false && Check_peer(peerid, all_peers.Offline_peers) == true){
 		var del_peer Peer
 		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
@@ -546,8 +536,6 @@ func Getback_peer(peerid string, all_peers All_peers) All_peers{
 
 		Write_peers(all_peers)
 	}
-
-	return all_peers
 }
 
 // Exchange temp_peers
