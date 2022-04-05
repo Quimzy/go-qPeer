@@ -4,14 +4,13 @@ package qpeer
 import ("net"
 	"log"
 	"encoding/json"
-	"fmt"
 	"crypto/rsa"
 	"github.com/Quirk-io/go-qPeer/qpeer"
 )
 
 // Setup
 
-func greet_setup(conn *net.UDPConn, addr *net.UDPAddr,peerid string) lib.Init{
+func greet_setup(conn *net.UDPConn, addr *net.UDPAddr, peerid string) lib.Init{
 	msg, err := json.Marshal(lib.Setup(peerid))
 	if err != nil{
 		log.Fatal(err)
@@ -81,9 +80,6 @@ func Send_bye(conn *net.UDPConn, addr *net.UDPAddr){
 
 func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, peerip string, port string, pubkey_pem string){
 	pubkey := lib.RSA_ImportPubkey(pubkey_pem)
-
-	address := string(fmt.Sprintf("%s:%s", peerip, port))
-	protocol := "tcp"
 
 	init := greet_setup(conn, addr, lpeer.Peerid)
 	if init.Peerid != lib.Sha1_encrypt(init.Pubkey_pem){

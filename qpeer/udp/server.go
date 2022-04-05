@@ -5,15 +5,16 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
+	"github.com/Quirk-io/go-qPeer/qpeer"
 )
 
-func send_init(conn net.Conn, init Init) string{//Recv AES_key
+func send_init(conn *net.UDPConn, addr *net.UDPAddr, init lib.Init) string{//Recv AES_key
 	jsonized_init, err := json.Marshal(init)
 	if err != nil{
 		log.Fatal(err)
 	}
 
-	_, write_err := conn.Write([]byte(jsonized_init))
+	_, write_err := conn.WriteToUDP([]byte(jsonized_init), addr)
 	if write_err != nil{
 		log.Fatal(write_err)
 	}
@@ -28,11 +29,11 @@ func send_init(conn net.Conn, init Init) string{//Recv AES_key
 	return string(buffer[:n])
 }
 
-func send_peerinfo_server(conn net.Conn, lpeer Lpeer, pubkey_pem string, AES_key string) string{//Recv kenc_peerinfo
-	lpeerinfo := peerinfo(lpeer.Peerip, lpeer.Port, pubkey_pem)
-	kenc_lpeerinfo := Kenc_peerinfo(lpeerinfo, AES_key)
+func send_peerinfo_server(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer, pubkey_pem string, AES_key string) string{//Recv kenc_peerinfo
+	lpeerinfo := lib.Peerinfo{lpeer.Endpoints, pubkey_pem}
+	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
 
-	_, write_err := conn.Write([]byte(kenc_lpeerinfo))
+	_, write_err := conn.WriteToUDP([]byte(kenc_lpeerinfo), addr)
 	if write_err != nil{
 		log.Fatal(write_err)
 	}
@@ -47,21 +48,20 @@ func send_peerinfo_server(conn net.Conn, lpeer Lpeer, pubkey_pem string, AES_key
 	return string(buffer[:n])
 }
 
-func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string){
-	pubkey := RSA_ImportPubkey(pubkey_pem)
-	init := Init_enc(lpeer.Peerid, pubkey_pem)
+func Server_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string){
+	pubkey := lib.RSA_ImportPubkey(pubkey_pem)
+	init := lib.Init_enc(lpeer.Peerid, pubkey_pem)
 
-	AES_key := Dpenc_AES(send_init(conn, init), privkey)
+	AES_key := lib.Dpenc_AES(send_init(conn, addr, init), privkey)
 
-	kenc_peerinfo := send_peerinfo_server(conn, lpeer, pubkey_pem, AES_key)
-	peerinfo := Dkenc_peerinfo(kenc_peerinfo, AES_key)
+	kenc_peerinfo := send_peerinfo_server(conn, addr, lpeer, pubkey_pem, AES_key)
+	peerinfo := lib.Dkenc_peerinfo(kenc_peerinfo, AES_key)
 
 	if lpeer.Peerid != peerid{
-		all_peers = Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
-		Write_peers(all_peers)		
+		lib.Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
 	}
 	
-	Send_bye(conn)
+	Send_bye(conn, addr)
 	buffer := make([]byte, 1024)
 
 	n, read_err := conn.Read(buffer)
@@ -77,10 +77,10 @@ func Server_setup(conn net.Conn, all_peers All_peers, lpeer Lpeer, privkey *rsa.
 
 //Exchange peers
 
-func send_kenc_verify(conn net.Conn, verify_msg string, AES_key string) string{
-	kenc_verify := Kenc_verify(verify_msg, AES_key)
+func send_kenc_verify(conn *net.UDPConn, addr *net.UDPAddr, verify_msg string, AES_key string) string{
+	kenc_verify := lib.Kenc_verify(verify_msg, AES_key)
 
-	_, write_err := conn.Write([]byte(kenc_verify))
+	_, write_err := conn.WriteToUDP([]byte(kenc_verify), addr)
 	if write_err != nil{
 		log.Fatal(write_err)
 	}
@@ -95,10 +95,10 @@ func send_kenc_verify(conn net.Conn, verify_msg string, AES_key string) string{
 	return string(buffer[:n])
 }
 
-func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, temp_peers []Lpeer, AES_key string) string{
-	enc_temp_peers := Share_temp_peers(temp_peers, AES_key)
+func send_temp_peers_server(conn *net.UDPConn, addr *net.UDPAddr, privkey *rsa.PrivateKey, temp_peers []lib.Lpeer, AES_key string) string{
+	enc_temp_peers := lib.Share_temp_peers(temp_peers, AES_key)
 
-	_, write_err := conn.Write([]byte(enc_temp_peers))
+	_, write_err := conn.WriteToUDP([]byte(enc_temp_peers), addr)
 	if write_err != nil{
 		log.Fatal(write_err)
 	}
@@ -114,35 +114,35 @@ func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, temp_peers [
 }
 
 
-func Server_exchange_peers(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, peerid string, privkey *rsa.PrivateKey){
-	peer := Decrypt_peer(peerid, privkey, all_peers.Peers) 
+func Server_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr ,all_peers lib.All_peers, lpeer lib.Lpeer, temp_peers []lib.Lpeer, peerid string, privkey *rsa.PrivateKey){
+	peer := lib.Decrypt_peer(peerid, privkey, all_peers.Peers) 
 
-	verify_msg := RandomString(32)
-	dkenc_verify := send_kenc_verify(conn, verify_msg, peer.AES_key)
+	verify_msg := lib.RandomString(32)
+	dkenc_verify := send_kenc_verify(conn, addr, verify_msg, peer.AES_key)
 
 	if dkenc_verify != verify_msg{
 		log.Fatal("Peer doesn't have the right AES_key")
 	}
 
-	recvd := send_temp_peers_server(conn, privkey, Return_temp_peers(privkey, all_peers.Peers), peer.AES_key)
+	recvd := send_temp_peers_server(conn, addr, privkey, lib.Return_temp_peers(privkey, all_peers.Peers), peer.AES_key)
 	
 	if recvd != "bye"{
-		Save_temp_peers(recvd, privkey, all_peers, peer.AES_key, lpeer)
+		lib.Save_temp_peers(recvd, privkey, all_peers, peer.AES_key, lpeer)
 	}
 }
 
 // Bootstrap
 
-func Server_bootstrap(conn net.Conn, all_peers All_peers, lpeer Lpeer, temp_peers []Lpeer, AES_key string, privkey *rsa.PrivateKey){
-	verify_msg := RandomString(32)
-	dkenc_verify := send_kenc_verify(conn, verify_msg, AES_key)
+func Server_bootstrap(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, temp_peers []lib.Lpeer, AES_key string, privkey *rsa.PrivateKey){
+	verify_msg := lib.RandomString(32)
+	dkenc_verify := send_kenc_verify(conn, addr, verify_msg, AES_key)
 	if dkenc_verify != verify_msg{
 		log.Fatal("Peer doesn't have the right AES_key")
 	}
 
-	temp_peer := send_temp_peers_server(conn, privkey, Return_temp_peers_bootstrap(privkey, temp_peers), AES_key)
-	Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
+	temp_peer := send_temp_peers_server(conn, addr, privkey, lib.Return_temp_peers_bootstrap(privkey, temp_peers), AES_key)
+	lib.Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
 
-	Send_bye(conn)
+	Send_bye(conn, addr)
 
 }
