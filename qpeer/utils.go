@@ -30,6 +30,7 @@ type RSA_Keys struct
 type Lpeer struct
 {
 	Peerid string `json:"peerid"`
+	Protocol string `json:"protocol"`
 	Endpoints stun.Endpoints `json:"endpoints"`
 }
 
@@ -48,6 +49,7 @@ type Peer struct
 
 type Peerinfo struct
 {
+	Protocol string
 	Endpoints stun.Endpoints
 	RSA_Pubkey string
 }
@@ -259,11 +261,12 @@ func Write_lpeer(lpeer Lpeer) {
 	_  = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 }
 
-func Set_lpeer(pubkey_pem string, endpoints stun.Endpoints) Lpeer {
+func Set_lpeer(pubkey_pem string, protocol string, endpoints stun.Endpoints) Lpeer {
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil{
 		lpeer = Read_lpeer()
-		if lpeer.Endpoints != endpoints { //If public ip has changed
+		if lpeer.Protocol != protocol &&lpeer.Endpoints != endpoints { //If public ip has changed
+			lpeer.Protocol = protocol
 			lpeer.Endpoints = endpoints
 			Write_lpeer(lpeer)
 		}
@@ -274,6 +277,7 @@ func Set_lpeer(pubkey_pem string, endpoints stun.Endpoints) Lpeer {
 		lpeer.Peerid = Sha1_encrypt(pubkey_pem)
 
 		//Setting the rest of the variables
+		lpeer.Protocol = protocol
 		lpeer.Endpoints = endpoints
 
 		Write_lpeer(lpeer)	
@@ -635,6 +639,8 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 }
 
 /*
-Ip, port should change to an array of public endpoint and private endpoint
-How to implement STUN-UDP in qPeer? Tcp instead of UDP? Tons of work...
+How to make qPeer compatible with Stun-UDP, Stun-TCP & UPNP?
+- Make a new node.go file to work with each method?
+- Make utils compatible with all methods:
+	-Improve Endpoints to work with UPnP as well
 */
