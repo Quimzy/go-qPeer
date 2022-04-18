@@ -1,4 +1,4 @@
-module github.com/uirk-io/go-qPeer
+module github.com/quirk-io/go-qPeer
 
 go 1.17
 
