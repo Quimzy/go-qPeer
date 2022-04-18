@@ -1,3 +1,3 @@
-module github.com/Quirk-io/go-qPeer
+module github.com/quirkio/go-qPeer
 
 go 1.17
