@@ -110,7 +110,7 @@ func Client_setup(all_peers lib.All_peers, lpeer lib.Lpeer, peerip string, port 
 	
 	bye := send_peerinfo(conn, lpeer, pubkey_pem, AES_key)
 	if bye == "bye"{
-		lib.Send_bye(conn)
+		Send_bye(conn)
 	}else{
 		log.Fatal("Bye not received")
 	}
@@ -194,7 +194,7 @@ func Client_exchange_peers(all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rs
 	if len(all_peers.Peers) >= 5{
 		send_temp_peers(conn, privkey, all_peers.Peers, AES_key)
 	}else{
-		lib.Send_bye(conn)
+		Send_bye(conn)
 	}
 
 	return nil
