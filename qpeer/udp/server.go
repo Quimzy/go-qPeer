@@ -5,7 +5,7 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
-	"github.com/Quirk-io/go-qPeer/qpeer"
+	"github.com/quirkio/go-qPeer/qpeer"
 )
 
 func send_init(conn *net.UDPConn, addr *net.UDPAddr, init lib.Init) string{//Recv AES_key

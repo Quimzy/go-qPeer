@@ -5,7 +5,7 @@ import ("net"
 	"log"
 	"encoding/json"
 	"crypto/rsa"
-	"github.com/Quirk-io/go-qPeer/qpeer"
+	"github.com/quirkio/go-qPeer/qpeer"
 )
 
 // Setup
