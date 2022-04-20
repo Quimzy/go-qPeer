@@ -3,7 +3,7 @@ package qpeer_testing
 
 import ("testing"
 	"fmt"
-	qpeer "github.com/Quirk-io/go-qPeer/qpeer"
+	qpeer "github.com/quirkio/go-qPeer/qpeer"
 )
 
 const (peerip = "localhost"
