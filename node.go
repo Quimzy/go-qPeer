@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quirk-io/go-qPeer/qpeer"
+import("github.com/quirkio/go-qPeer/qpeer"
 	"os"
 	"encoding/json"
 	"net"

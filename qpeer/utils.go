@@ -18,7 +18,7 @@ import ("encoding/json"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"github.com/Quirk-io/Endpoint/stun"
+	"github.com/quirkio/Endpoint/stun"
 )
 
 type RSA_Keys struct 
@@ -509,7 +509,7 @@ func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpee
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 	
-	temp_peer := Lpeer{peer.Peerid, peerinfo.Endpoints}
+	temp_peer := Lpeer{peer.Peerid, peerinfo.Protocol, peerinfo.Endpoints}
 
 	return temp_peer
 }
