@@ -1,4 +1,6 @@
-github.com/Quirk-io/Endpoint v0.0.0-20220331191307-3bd48224c9c4 h1:qiFErPY4fuPBjPn76A4OzAiFkXWhod47HQBzi3LTeGc=
-github.com/Quirk-io/Endpoint v0.0.0-20220331191307-3bd48224c9c4/go.mod h1:v47zlbgAwQby7OaGiL5bZnGSK5csk7Jc4U7P9q+89Mc=
-github.com/Quirk-io/Endpoint v0.0.0-20220331200127-b5be9b327743 h1:ATjJyDUNtk524hewF98A9Qx1lp7TblQtjAKEAts62u8=
-github.com/Quirk-io/Endpoint v0.0.0-20220331200127-b5be9b327743/go.mod h1:v47zlbgAwQby7OaGiL5bZnGSK5csk7Jc4U7P9q+89Mc=
+github.com/huin/goupnp v1.0.3/go.mod h1:ZxNlw5WqJj6wSsRK5+YfflQGXYfccj5VgQsMNixHM7Y=
+github.com/huin/goutil v0.0.0-20170803182201-1ca381bf3150/go.mod h1:PpLOETDnJ0o3iZrZfqZzyLl6l7F3c6L1oWn7OICBi6o=
+github.com/jcuga/go-upnp v0.0.0-20160830125909-492b17f02cbb/go.mod h1:9hAVo23jpanJ+gr4zD28Fe+aSLBHb5eGdHe+E3DLiaQ=
+github.com/quirkio/Endpoint v0.0.0-20220419215525-899a3c217fec h1:6dblygq1ulcH2hyWTlnuw2jmdza59209oySn8NEvcKE=
+github.com/quirkio/Endpoint v0.0.0-20220419215525-899a3c217fec/go.mod h1:wZWD9Seh0mSnS4GJbRDAYy1h1NaV4NPkbVH8xPgPbgc=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

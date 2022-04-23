@@ -1,7 +1,7 @@
 
 package main
 
-import("github.com/Quirk-io/go-qPeer/qpeer/udp"
+import("github.com/quirkio/go-qPeer/qpeer"
 	"os"
 	"net"
 	"log"
@@ -10,12 +10,13 @@ import("github.com/Quirk-io/go-qPeer/qpeer/udp"
 
 func Bootstrap(){
 	log.Println("qPeer bootstrap node started")
-	privkey, pubkey := qpeer.Set_RSA_Keys()
-	pubkey_pem := qpeer.RSA_ExportPubkey(pubkey)
+	privkey, pubkey := lib.Set_RSA_Keys()
+	pubkey_pem := lib.RSA_ExportPubkey(pubkey)
+	
 
 	AES_key := "" //Set AES_key for bootstrap node
 	log.Println("AES_key:", AES_key)
-	lpeer := qpeer.Set_lpeer(pubkey_pem)
+	lpeer := lib.Set_lpeer(pubkey_pem)
 
 	addr := ":1691"
 	srv, err := net.Listen("tcp", addr)
@@ -37,15 +38,15 @@ func Bootstrap(){
 			log.Fatal(read_err)
 		}
 				
-		var firstmsg utils.Firstmsg
+		var firstmsg lib.Firstmsg
 		json.Unmarshal(buffer[:n], &firstmsg)
 	   
-	    var all_peers utils.All_peers
-	    var temp_peers []utils.Lpeer
+	    var all_peers lib.All_peers
+	    var temp_peers []lib.Lpeer
 		if _, err := os.Stat("temp_peers"); err == nil{
-			temp_peers = qpeer.Read_temp_peers()
+			temp_peers = lib.Read_temp_peers()
 		}
 
-		go qpeer.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
+		go lib.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
 	}
 }
