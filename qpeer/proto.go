@@ -41,3 +41,5 @@ func IsTCPOnline(peerip string, port string) bool{ //TCP && UPnP
 
 	return false
 }
+
+func SetProto() (string, stun.Endpoints){}
