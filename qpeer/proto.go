@@ -2,11 +2,29 @@
 package lib
 
 import (
-	//"github.com/quirkio/Endpoint/stun"
+	"github.com/quirkio/Endpoint/stun"
+	"github.com/quirkio/Endpoint/upnp"
 	"net"
 	"fmt"
 	"time"
 )
+
+func IsOnline(peerip string, port string) bool{ //TCP && UPnP
+	timeout := 5 * time.Second
+	addr := fmt.Sprintf("%s:%s", peerip, port)
+	
+	conn, err := net.DialTimeout("tcp", addr, timeout)
+	if err != nil{
+		return false
+	}
+
+	if conn != nil{
+		conn.Close()
+		return true
+	}
+
+	return false
+}
 
 func IsUDPOnline(peerip string, port string) bool{
 	timeout := 5 * time.Second
@@ -25,21 +43,35 @@ func IsUDPOnline(peerip string, port string) bool{
 	return false
 }
 
-func IsTCPOnline(peerip string, port string) bool{ //TCP && UPnP
-	timeout := 5 * time.Second
-	addr := fmt.Sprintf("%s:%s", peerip, port)
+func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stun.Endpoints){
+	var conn *net.UDPConn
+	var proto string
+	var endpoints stun.Endpoints
+	endpoints = stun.Endpoints{} //empty endpoints
+
+	//UDP
 	
-	conn, err := net.DialTimeout("tcp", addr, timeout)
-	if err != nil{
-		return false
+	proto = "udp"
+	conn, endpoints = stun.Udp(AES_key, signal_ip, signal_port)
+	
+	if IsUDPOnline(endpoints.PublicEndpoint.Ip, endpoints.PublicEndpoint.Port) != true{
+		//UPNP
+		
+		conn = nil 
+		proto = "upnp"
+		port := "1691"
+
+		endpoints.PublicEndpoint = upnp.OpenPort(port)
+		endpoints.PrivateEndpoint = endpoints.PublicEndpoint
+
+		if IsOnline(endpoints.PublicEndpoint.Ip, endpoints.PublicEndpoint.Port) != true{
+			//No method works, m sorry...
+
+			conn = nil
+			proto = ""		
+		}
 	}
 
-	if conn != nil{
-		conn.Close()
-		return true
-	}
+	return conn, proto, endpoints
 
-	return false
 }
-
-func SetProto() (string, stun.Endpoints){}
