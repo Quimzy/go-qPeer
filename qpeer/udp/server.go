@@ -146,3 +146,10 @@ func Server_bootstrap(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_pe
 	Send_bye(conn, addr)
 
 }
+
+// Ping
+
+func Server_ping(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer){
+	peerid := lpeer.Peerid
+	_, write_err := conn.WriteToUDP([]byte(peerid), addr)
+}

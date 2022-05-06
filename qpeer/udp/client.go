@@ -223,7 +223,15 @@ func Client_ping(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, 
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 
 	_, write_err := conn.WriteToUDP([]byte("ping"), addr)
-	if write_err != nil{
+	
+	buffer := make([]byte, 1024)
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+	recvd_peerid := string(buffer[:n])
+
+	if write_err != nil || recvd_peerid != peerid{
 		lib.Remove_peer(peerid, all_peers)
 	}
 }
@@ -236,7 +244,15 @@ func Client_getback(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peer
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 
 	_, write_err := conn.WriteToUDP([]byte("ping"), addr)
-	if write_err != nil{
+	
+	buffer := make([]byte, 1024)
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+	recvd_peerid := string(buffer[:n])
+
+	if write_err != nil || recvd_peerid != peerid{
 		lib.Remove_peer(peerid, all_peers)
 	}
 }

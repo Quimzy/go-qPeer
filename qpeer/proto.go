@@ -43,12 +43,32 @@ func IsUDPOnline(peerip string, port string) bool{
 	return false
 }
 
+func IsPeeridValid(conn *net.UDPConn, peerid string, peerip string, port string) bool{
+	//check if PrivateEndpoint is related to peer or not using peerid
+
+	addr := fmt.Sprintf("%s:%s", peerip, port)
+
+	_, write_err := conn.WriteToUDP([]byte("ping"), addr)
+
+	buffer := make([]byte, 1024)
+	n, read_err := conn.Read(buffer)
+	if read_err != nil {
+		log.Fatal(read_err)
+	}
+	recvd_peerid := string(buffer[:n])
+
+	if recvd_peerid == peerid{
+		return true
+	}
+
+	return false
+}
+
 func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stun.Endpoints){
 	var conn *net.UDPConn
 	var proto string
 	var endpoints stun.Endpoints
-	endpoints = stun.Endpoints{} //empty endpoints
-
+	
 	//UDP
 	
 	proto = "udp"
@@ -68,14 +88,19 @@ func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stu
 			//No method works, m sorry...
 
 			conn = nil
-			proto = ""		
+			proto = ""
+			endpoints = stun.Endpoints{} //empty endpoints		
 		}
 	}
 
 	return conn, proto, endpoints
-
 }
 
-func LockEndpoint(proto string, endpoints stun.Endpoints){
-	
+func LockEndpointUDP(conn *net.UDPConn, peerid string, endpoints stun.Endpoints) stun.Endpoint{
+	privendpoint := endpoints.PrivateEndpoint
+	if IsUDPOnline(privendpoint.Ip, privendpoint.Port) == true && IsPeeridValid(conn, peerid, peerip, port) == true{
+		return privendpoint
+	}
+
+	return endpoints.PublicEndpoint
 }
