@@ -75,3 +75,7 @@ func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stu
 	return conn, proto, endpoints
 
 }
+
+func LockEndpoint(proto string, endpoints stun.Endpoints){
+	
+}
