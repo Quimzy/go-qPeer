@@ -7,6 +7,7 @@ import (
 	"net"
 	"fmt"
 	"time"
+	"log"
 )
 
 func IsOnline(peerip string, port string) bool{ //TCP && UPnP
@@ -46,9 +47,12 @@ func IsUDPOnline(peerip string, port string) bool{
 func IsPeeridValid(conn *net.UDPConn, peerid string, peerip string, port string) bool{
 	//check if PrivateEndpoint is related to peer or not using peerid
 
-	addr := fmt.Sprintf("%s:%s", peerip, port)
+	addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%s", peerip, port))
 
 	_, write_err := conn.WriteToUDP([]byte("ping"), addr)
+	if write_err != nil{
+		log.Fatal(write_err)
+	}
 
 	buffer := make([]byte, 1024)
 	n, read_err := conn.Read(buffer)
@@ -98,7 +102,7 @@ func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stu
 
 func LockEndpointUDP(conn *net.UDPConn, peerid string, endpoints stun.Endpoints) stun.Endpoint{
 	privendpoint := endpoints.PrivateEndpoint
-	if IsUDPOnline(privendpoint.Ip, privendpoint.Port) == true && IsPeeridValid(conn, peerid, peerip, port) == true{
+	if IsUDPOnline(privendpoint.Ip, privendpoint.Port) == true && IsPeeridValid(conn, peerid, privendpoint.Ip, privendpoint.Port) == true{
 		return privendpoint
 	}
 
