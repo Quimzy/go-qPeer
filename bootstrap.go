@@ -36,9 +36,11 @@ func Bootstrap() {
 	endpoints.PublicEndpoint = endpoint
 	endpoints.PrivateEndpoint = endpoint
 
+	lpeer := lib.Lpeer{lib.Sha1_encrypt(pubkey_pem), "tcp", endpoints}
+	log.Println("Lpeer:", lpeer)
+
 	AES_key := lib.AES_keygen() //Setting AES_key for bootstrap node
 	log.Println("AES_key:", AES_key)
-	lpeer := lib.Lpeer{lib.Sha1_encrypt(pubkey_pem), "tcp", endpoints}
 
 	addr := ":1691"
 	srv, err := net.Listen("tcp", addr)
@@ -70,5 +72,6 @@ func Bootstrap() {
 		}
 
 		go upnp.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
+		go stun.Udp_Rendezvous(AES_key)
 	}
 }
