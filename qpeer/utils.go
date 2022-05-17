@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	random "math/rand"
+	"net"
 	"os"
 	"time"
 
@@ -253,7 +254,10 @@ func Write_lpeer(lpeer Lpeer) {
 	_ = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 }
 
-func Set_lpeer(pubkey_pem string, protocol string, endpoints stun.Endpoints) Lpeer {
+func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*net.UDPConn, Lpeer) {
+	//Setting Proto & Endpoints
+	conn, protocol, endpoints := SetProto(bootstrap_AES_key, signal_ip, signal_port)
+
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil {
 		lpeer = Read_lpeer()
@@ -276,7 +280,7 @@ func Set_lpeer(pubkey_pem string, protocol string, endpoints stun.Endpoints) Lpe
 	}
 
 	log.Println("Your peerid is:", lpeer.Peerid)
-	return lpeer
+	return conn, lpeer
 }
 
 // Encryption Functions

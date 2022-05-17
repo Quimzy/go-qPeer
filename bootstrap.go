@@ -2,21 +2,43 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
+	stun "github.com/quirkio/Endpoint/stun"
 	lib "github.com/quirkio/go-qPeer/qpeer"
+	upnp "github.com/quirkio/go-qPeer/qpeer/upnp"
 )
+
+func getmyip() string {
+	req, err := http.Get("https://api.ipify.org")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ip, _ := ioutil.ReadAll(req.Body)
+	return string(ip)
+}
 
 func Bootstrap() {
 	log.Println("qPeer bootstrap node started")
+
+	//Setting RSA_keys
 	privkey, pubkey := lib.Set_RSA_Keys()
 	pubkey_pem := lib.RSA_ExportPubkey(pubkey)
 
-	AES_key := "" //Set AES_key for bootstrap node
+	//Setting Endpoints
+	var endpoints stun.Endpoints
+	var endpoint stun.Endpoint
+	endpoint = stun.Endpoint{getmyip(), "1691"}
+	endpoints.PublicEndpoint = endpoint
+	endpoints.PrivateEndpoint = endpoint
+
+	AES_key := lib.AES_keygen() //Setting AES_key for bootstrap node
 	log.Println("AES_key:", AES_key)
-	lpeer := lib.Set_lpeer(pubkey_pem)
+	lpeer := lib.Lpeer{lib.Sha1_encrypt(pubkey_pem), "tcp", endpoints}
 
 	addr := ":1691"
 	srv, err := net.Listen("tcp", addr)
@@ -47,6 +69,6 @@ func Bootstrap() {
 			temp_peers = lib.Read_temp_peers()
 		}
 
-		go lib.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
+		go upnp.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
 	}
 }
