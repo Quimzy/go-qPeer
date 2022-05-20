@@ -73,5 +73,7 @@ func Bootstrap() {
 
 		go upnp.Server_bootstrap(conn, all_peers, lpeer, temp_peers, AES_key, privkey)
 		go stun.Udp_Rendezvous(AES_key)
+
+		//Add sync.Waitgroup support
 	}
 }
