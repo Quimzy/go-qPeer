@@ -8,7 +8,9 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	lib "github.com/quirkio/go-qPeer/qpeer"
@@ -237,4 +239,49 @@ func Getback(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup)
 			}
 		}
 	}
+}
+
+//*sighs* final function... :D
+
+func Node() {
+	log.Println("qPeer node started")
+	privkey, pubkey := lib.Set_RSA_Keys()
+	pubkey_pem := lib.RSA_ExportPubkey(pubkey)
+
+	bootstrap_AES_key, bootstrap_ip, bootstrap_port := "", "", ""
+
+	conn_udp, lpeer := lib.Set_lpeer(pubkey_pem, bootstrap_AES_key, bootstrap_ip, bootstrap_port)
+
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	if conn_udp != nil { //if proto is udp
+		go Server_UDP(conn_udp, privkey, pubkey_pem, lpeer, &wg)
+		go Client(conn_udp, lpeer, privkey, pubkey_pem, bootstrap_AES_key, bootstrap_ip, bootstrap_port, &wg)
+		go Ping(conn_udp, privkey, &wg)
+		go Getback(conn_udp, privkey, &wg)
+	} else { //upnp
+		localaddr, _ := net.ResolveUDPAddr("udp", ":1691")
+		conn_udp, err := net.ListenUDP("udp", localaddr) //used for just connecting, not listening
+		if err != nil {
+			log.Fatal(err)
+		}
+		go Server_TCP(lpeer, privkey, pubkey_pem, &wg)
+		go Client(conn_udp, lpeer, privkey, pubkey_pem, bootstrap_AES_key, bootstrap_ip, bootstrap_port, &wg)
+		go Ping(conn_udp, privkey, &wg)
+		go Getback(conn_udp, privkey, &wg)
+	}
+
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		err := os.Remove("temp_peers")
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(1)
+	}()
+
+	wg.Wait()
 }
