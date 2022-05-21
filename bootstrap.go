@@ -1,9 +1,6 @@
 package main
 
 import (
-	"os"
-	"net"
-	"log"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -34,8 +31,7 @@ func Bootstrap() {
 
 	//Setting Endpoints
 	var endpoints stun.Endpoints
-	var endpoint stun.Endpoint
-	endpoint = stun.Endpoint{getmyip(), "1691"}
+	endpoint := stun.Endpoint{getmyip(), "1691"}
 	endpoints.PublicEndpoint = endpoint
 	endpoints.PrivateEndpoint = endpoint
 
