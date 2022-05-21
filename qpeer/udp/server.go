@@ -131,22 +131,6 @@ func Server_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 	}
 }
 
-// Bootstrap
-
-func Server_bootstrap(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, temp_peers []lib.Lpeer, AES_key string, privkey *rsa.PrivateKey) {
-	verify_msg := lib.RandomString(32)
-	dkenc_verify := send_kenc_verify(conn, addr, verify_msg, AES_key)
-	if dkenc_verify != verify_msg {
-		log.Fatal("Peer doesn't have the right AES_key")
-	}
-
-	temp_peer := send_temp_peers_server(conn, addr, privkey, lib.Return_temp_peers_bootstrap(privkey, temp_peers), AES_key)
-	lib.Save_temp_peers(temp_peer, privkey, all_peers, AES_key, lpeer)
-
-	Send_bye(conn, addr)
-
-}
-
 // Ping
 
 func Server_ping(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer) {
