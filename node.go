@@ -186,3 +186,55 @@ func Client(conn_udp *net.UDPConn, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pub
 		}
 	}
 }
+
+func Ping(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup) { //r u up?
+	for {
+		var all_peers lib.All_peers
+		if _, err := os.Stat("peers.json"); err == nil {
+			all_peers = lib.Read_peers()
+		}
+
+		if len(all_peers.Peers) > 0 {
+			rand.Seed(time.Now().UnixNano())
+			enc_peer := all_peers.Peers[rand.Intn(len(all_peers.Peers))]
+			peer := lib.Decrypt_peer(enc_peer.Peerid, privkey, all_peers.Peers)
+
+			var peerinfo lib.Peerinfo
+			json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
+
+			if peerinfo.Protocol == "udp" {
+				endpoint := lib.LockEndpointUDP(conn_udp, peer.Peerid, peerinfo.Endpoints)
+				addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%s", endpoint.Ip, endpoint.Port))
+				udp.Client_ping(conn_udp, addr, all_peers, peer.Peerid, privkey)
+			} else if peerinfo.Protocol == "upnp" {
+				upnp.Client_ping(all_peers, peer.Peerid, privkey)
+			}
+		}
+	}
+}
+
+func Getback(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup) { //okay, u up.. get back here
+	for {
+		var all_peers lib.All_peers
+		if _, err := os.Stat("peers.json"); err == nil {
+			all_peers = lib.Read_peers()
+		}
+
+		if len(all_peers.Offline_peers) > 0 {
+			rand.Seed(time.Now().UnixNano())
+			enc_peer := all_peers.Peers[rand.Intn(len(all_peers.Peers))]
+			peer := lib.Decrypt_peer(enc_peer.Peerid, privkey, all_peers.Peers)
+
+			var peerinfo lib.Peerinfo
+			json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
+
+			if peerinfo.Protocol == "udp" {
+				endpoint := lib.LockEndpointUDP(conn_udp, peer.Peerid, peerinfo.Endpoints)
+				addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%s", endpoint.Ip, endpoint.Port))
+				udp.Client_getback(conn_udp, addr, all_peers, peer.Peerid, privkey)
+			} else if peerinfo.Protocol == "upnp" {
+				upnp.Client_getback(all_peers, peer.Peerid, privkey)
+			}
+		}
+	}
+}
