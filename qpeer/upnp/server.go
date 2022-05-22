@@ -31,7 +31,11 @@ func send_init(conn net.Conn, init lib.Init) string { //Recv AES_key
 }
 
 func send_peerinfo_server(conn net.Conn, lpeer lib.Lpeer, pubkey_pem string, AES_key string) string { //Recv kenc_peerinfo
-	lpeerinfo := lib.Peerinfo{lpeer.Protocol, lpeer.Endpoints, pubkey_pem}
+	var lpeerinfo lib.Peerinfo
+	lpeerinfo.Protocol = lpeer.Protocol
+	lpeerinfo.Endpoints = lpeer.Endpoints
+	lpeerinfo.RSA_Pubkey = pubkey_pem
+
 	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
 
 	_, write_err := conn.Write([]byte(kenc_lpeerinfo))

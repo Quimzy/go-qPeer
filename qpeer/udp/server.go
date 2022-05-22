@@ -31,7 +31,11 @@ func send_init(conn *net.UDPConn, addr *net.UDPAddr, init lib.Init) string { //R
 }
 
 func send_peerinfo_server(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer, pubkey_pem string, AES_key string) string { //Recv kenc_peerinfo
-	lpeerinfo := lib.Peerinfo{lpeer.Protocol, lpeer.Endpoints, pubkey_pem}
+	var lpeerinfo lib.Peerinfo
+	lpeerinfo.Protocol = lpeer.Protocol
+	lpeerinfo.Endpoints = lpeer.Endpoints
+	lpeerinfo.RSA_Pubkey = pubkey_pem
+
 	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
 
 	_, write_err := conn.WriteToUDP([]byte(kenc_lpeerinfo), addr)
