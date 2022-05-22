@@ -55,7 +55,11 @@ func send_key(conn net.Conn, AES_key string, pubkey *rsa.PublicKey) string {
 }
 
 func send_peerinfo(conn net.Conn, lpeer lib.Lpeer, pubkey_pem string, AES_key string) string {
-	lpeerinfo := lib.Peerinfo{lpeer.Protocol, lpeer.Endpoints, pubkey_pem}
+	var lpeerinfo lib.Peerinfo
+	lpeerinfo.Protocol = lpeer.Protocol
+	lpeerinfo.Endpoints = lpeer.Endpoints
+	lpeerinfo.RSA_Pubkey = pubkey_pem
+
 	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
 
 	_, write_err := conn.Write([]byte(kenc_lpeerinfo))
