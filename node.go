@@ -243,12 +243,10 @@ func Getback(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup)
 
 //*sighs* final function... :D
 
-func Node() {
+func Node(bootstrap_AES_key, bootstrap_ip, bootstrap_port string) {
 	log.Println("qPeer node started")
 	privkey, pubkey := lib.Set_RSA_Keys()
 	pubkey_pem := lib.RSA_ExportPubkey(pubkey)
-
-	bootstrap_AES_key, bootstrap_ip, bootstrap_port := "", "", ""
 
 	conn_udp, lpeer := lib.Set_lpeer(pubkey_pem, bootstrap_AES_key, bootstrap_ip, bootstrap_port)
 
