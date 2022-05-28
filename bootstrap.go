@@ -86,7 +86,7 @@ func Bootstrap() {
 
 	//Setting AES_key for bootstrap node, u pick or i pick...
 	var AES_key = flag.String("key", lib.AES_keygen(), "set bootstrap AES_key")
-	log.Println("AES_key:", AES_key)
+	log.Println("AES_key:", *AES_key)
 
 	//some goroutines and threading...
 	var wg sync.WaitGroup
