@@ -1,4 +1,4 @@
-package main
+package qpeer
 
 import (
 	"crypto/rsa"
