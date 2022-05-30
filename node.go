@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	lib "github.com/quarkio/go-qPeer/qpeer"
-	udp "github.com/quarkio/go-qPeer/qpeer/udp"
-	upnp "github.com/quarkio/go-qPeer/qpeer/upnp"
+	lib "github.com/quark-io/go-qPeer/qpeer"
+	udp "github.com/quark-io/go-qPeer/qpeer/udp"
+	upnp "github.com/quark-io/go-qPeer/qpeer/upnp"
 )
 
 // UDP is different from TCP. Two server functions for each protocol, one long client function for both.

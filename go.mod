@@ -1,5 +1,8 @@
-module github.com/quarkio/go-qPeer
+module github.com/quark-io/go-qPeer
 
 go 1.17
 
-require github.com/quarkio/Endpoint v0.0.0-20220522122136-d7922f1ef260
+require (
+	github.com/quark-io/Endpoint v0.0.0-20220530145106-103156372152
+	github.com/quark-io/go-qPeer v0.1.1
+)

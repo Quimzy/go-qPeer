@@ -3,7 +3,11 @@ github.com/huin/goupnp v1.0.3/go.mod h1:ZxNlw5WqJj6wSsRK5+YfflQGXYfccj5VgQsMNixH
 github.com/huin/goutil v0.0.0-20170803182201-1ca381bf3150/go.mod h1:PpLOETDnJ0o3iZrZfqZzyLl6l7F3c6L1oWn7OICBi6o=
 github.com/jcuga/go-upnp v0.0.0-20160830125909-492b17f02cbb h1:0YyWPyBOaOvWfYylCMkFwSb6uo+zWmI7Yw9ChsQBbHk=
 github.com/jcuga/go-upnp v0.0.0-20160830125909-492b17f02cbb/go.mod h1:9hAVo23jpanJ+gr4zD28Fe+aSLBHb5eGdHe+E3DLiaQ=
+github.com/quark-io/Endpoint v0.0.0-20220530145106-103156372152 h1:cpDcoYh2FCHQSf7lggvEdDYXjNIfMPzysSFnDIvba7w=
+github.com/quark-io/Endpoint v0.0.0-20220530145106-103156372152/go.mod h1:v+raAo9ZLYaqPoC1ZBo6VrhH1g8tLvGM5EpWp++ZPhY=
 github.com/quirkio/Endpoint v0.0.0-20220522122136-d7922f1ef260 h1:VwFlyMA8d5p9J0XkrlZtGNlE/V2BiADZWb8feNwcQ1I=
 github.com/quirkio/Endpoint v0.0.0-20220522122136-d7922f1ef260/go.mod h1:IE+NjHHAW1wzd2aa14i3MPIvLIIbic0+RuOEijQI6+c=
+github.com/quirkio/go-qPeer v0.1.1 h1:hrv7rhNWiilWh4lpT1OX0YseX6BBEpC/QMo3b83iP0E=
+github.com/quirkio/go-qPeer v0.1.1/go.mod h1:Ycm/s0Y5ZTiqzattecsUDJanaLapNQQa6sGPKguJuY4=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

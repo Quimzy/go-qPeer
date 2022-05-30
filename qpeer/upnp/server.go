@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 
-	lib "github.com/quarkio/go-qPeer/qpeer"
+	lib "github.com/quark-io/go-qPeer/qpeer"
 )
 
 func send_init(conn net.Conn, init lib.Init) string { //Recv AES_key

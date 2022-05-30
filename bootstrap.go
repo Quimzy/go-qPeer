@@ -11,9 +11,9 @@ import (
 	"os"
 	"sync"
 
-	stun "github.com/quarkio/Endpoint/stun"
-	lib "github.com/quarkio/go-qPeer/qpeer"
-	upnp "github.com/quarkio/go-qPeer/qpeer/upnp"
+	stun "github.com/quark-io/Endpoint/stun"
+	lib "github.com/quark-io/go-qPeer/qpeer"
+	upnp "github.com/quark-io/go-qPeer/qpeer/upnp"
 )
 
 func getmyip() string {

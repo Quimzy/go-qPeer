@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/quarkio/Endpoint/stun"
-	"github.com/quarkio/Endpoint/upnp"
+	"github.com/quark-io/Endpoint/stun"
+	"github.com/quark-io/Endpoint/upnp"
 )
 
 func IsOnline(peerip string, port string) bool { //TCP && UPnP
