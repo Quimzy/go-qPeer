@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/quirkio/Endpoint/stun"
+	"github.com/quarkio/Endpoint/stun"
 )
 
 type RSA_Keys struct {
