@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	lib "github.com/quirkio/go-qPeer/qpeer"
+	lib "github.com/quark-io/go-qPeer/qpeer"
 )
 
 // Setup

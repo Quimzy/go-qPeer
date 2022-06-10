@@ -1,4 +1,4 @@
-package main
+package qpeer
 
 import (
 	"crypto/rsa"
@@ -11,9 +11,9 @@ import (
 	"os"
 	"sync"
 
-	stun "github.com/quirkio/Endpoint/stun"
-	lib "github.com/quirkio/go-qPeer/qpeer"
-	upnp "github.com/quirkio/go-qPeer/qpeer/upnp"
+	stun "github.com/quark-io/Endpoint/stun"
+	lib "github.com/quark-io/go-qPeer/qpeer"
+	upnp "github.com/quark-io/go-qPeer/qpeer/upnp"
 )
 
 func getmyip() string {
@@ -86,7 +86,7 @@ func Bootstrap() {
 
 	//Setting AES_key for bootstrap node, u pick or i pick...
 	var AES_key = flag.String("key", lib.AES_keygen(), "set bootstrap AES_key")
-	log.Println("AES_key:", AES_key)
+	log.Println("AES_key:", *AES_key)
 
 	//some goroutines and threading...
 	var wg sync.WaitGroup

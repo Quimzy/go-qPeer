@@ -8,9 +8,10 @@
 ## TODO
 
 - [X] Portforwarding-lib: Stun & UPnP
-- [ ] Error Handling
 - [X] Logging (without saving to file)
+- [ ] Error Handling
 - [ ] Adding tests
+- [ ] Documentation
 
 ---
 

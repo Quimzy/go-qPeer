@@ -1,24 +1,17 @@
-
 package lib
 
-type GreetError struct{}
+import "errors"
 
-type VerifyError struct{}
+var ErrorGreet = errors.New("qpeer: can't greet peer")
 
-type PingError struct{}
+var ErrorPeerid = errors.New("qpeer: peer's peerid doesn't match peer's public key")
 
-type InitError struct{}
+var ErrorKpeerinfo = errors.New("qpeer: can't get AES encrypted peerinfo")
 
-type IdError struct{}
+var ErrorSamePeerid = errors.New("qpeer: peer has the same peerid as lpeer")
 
-type RsaError struct{}
+var ErrorBye = errors.New("qpeer: peer did not send bye back")
 
-type AesError struct{}
+var ErrorVerify = errors.New("qpeer: problem with AES_key verification")
 
-type PeersError struct{}
-
-type LpeerError struct{}
-
-type PubkeyError struct{}
-
-type ByeError struct{}
+var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers")
