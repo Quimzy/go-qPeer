@@ -3,7 +3,6 @@ package qpeer
 import (
 	"crypto/rsa"
 	"encoding/json"
-	"log"
 	"net"
 
 	lib "github.com/quark-io/go-qPeer/qpeer"
@@ -76,11 +75,13 @@ func send_peerinfo(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer, pubkey
 	return string(buffer[:n]), nil
 }
 
-func Send_bye(conn *net.UDPConn, addr *net.UDPAddr) {
+func Send_bye(conn *net.UDPConn, addr *net.UDPAddr) error {
 	_, write_err := conn.WriteToUDP([]byte("bye"), addr)
 	if write_err != nil {
-		log.Fatal(write_err)
+		return write_err
 	}
+
+	return nil
 }
 
 func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, pubkey_pem string) error {
@@ -117,7 +118,11 @@ func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 	if bye_err != nil && bye != "bye" {
 		return lib.ErrorBye
 	}
-	Send_bye(conn, addr)
+
+	bye_err2 := Send_bye(conn, addr) //TODO: find a better variable name
+	if bye_err2 != nil {
+		return lib.ErrorBye
+	}
 
 	return nil
 }
@@ -198,7 +203,10 @@ func Client_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 			return lib.ErrorBye
 		}
 	} else {
-		Send_bye(conn, addr)
+		bye_err2 := Send_bye(conn, addr)
+		if bye_err2 != nil {
+			return lib.ErrorBye
+		}
 	}
 
 	return nil
@@ -215,12 +223,10 @@ func Client_ping(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, 
 
 	buffer := make([]byte, 1024)
 	n, read_err := conn.Read(buffer)
-	if read_err != nil {
-		log.Fatal(read_err)
-	}
+
 	recvd_peerid := string(buffer[:n])
 
-	if write_err != nil || recvd_peerid != peerid {
+	if write_err != nil || read_err != nil || recvd_peerid != peerid {
 		lib.Remove_peer(peerid, all_peers)
 	}
 }
@@ -236,12 +242,10 @@ func Client_getback(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peer
 
 	buffer := make([]byte, 1024)
 	n, read_err := conn.Read(buffer)
-	if read_err != nil {
-		log.Fatal(read_err)
-	}
+
 	recvd_peerid := string(buffer[:n])
 
-	if write_err != nil || recvd_peerid != peerid {
+	if write_err != nil || read_err != nil || recvd_peerid != peerid {
 		lib.Remove_peer(peerid, all_peers)
 	}
 }
