@@ -11,3 +11,7 @@ var ErrorKpeerinfo = errors.New("qpeer: can't get AES encrypted peerinfo")
 var ErrorSamePeerid = errors.New("qpeer: peer has the same peerid as lpeer")
 
 var ErrorBye = errors.New("qpeer: peer did not send bye back")
+
+var ErrorVerify = errors.New("qpeer: problem with AES_key verification")
+
+var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers")
