@@ -66,7 +66,10 @@ func Server_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 		lib.Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
 	}
 
-	Send_bye(conn, addr)
+	bye_err := Send_bye(conn, addr)
+	if bye_err != nil {
+		log.Fatal(bye_err)
+	}
 	buffer := make([]byte, 1024)
 
 	n, read_err := conn.Read(buffer)
