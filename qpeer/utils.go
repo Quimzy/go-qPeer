@@ -261,9 +261,17 @@ func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*n
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil {
 		lpeer = Read_lpeer()
-		if lpeer.Protocol != protocol && lpeer.Endpoints != endpoints { //If public ip has changed
+
+		if lpeer.Peerid != Sha1_encrypt(pubkey_pem) { //peerid is always linked with RSA public key
+			lpeer.Peerid = Sha1_encrypt(pubkey_pem)
+		}
+
+		if lpeer.Protocol != protocol && lpeer.Endpoints != endpoints { //if public ip has changed
 			lpeer.Protocol = protocol
 			lpeer.Endpoints = endpoints
+		}
+
+		if lpeer != Read_lpeer() { //if lpeer has changed
 			Write_lpeer(lpeer)
 		}
 	} else {
