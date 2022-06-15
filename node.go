@@ -55,6 +55,8 @@ func Server_UDP(conn *net.UDPConn, privkey *rsa.PrivateKey, pubkey_pem string, l
 			}
 
 			udp.Server_exchange_peers(conn, public_addr, lib.Read_peers(), lpeer, temp_peers, firstmsg.Peerid, privkey)
+		case "ping":
+			udp.Server_ping(conn, public_addr, lpeer)
 		}
 
 	}
