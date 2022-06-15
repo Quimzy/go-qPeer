@@ -115,7 +115,7 @@ func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 	}
 
 	bye, bye_err := send_peerinfo(conn, addr, lpeer, pubkey_pem, AES_key)
-	if bye_err != nil && bye != "bye" {
+	if bye_err != nil || bye != "bye" {
 		return lib.ErrorBye
 	}
 
