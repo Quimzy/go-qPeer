@@ -28,35 +28,33 @@ func Server_UDP(conn *net.UDPConn, privkey *rsa.PrivateKey, pubkey_pem string, l
 		buffer := make([]byte, 2048)
 
 		n, public_addr, read_err := conn.ReadFromUDP(buffer)
-		if read_err != nil {
-			log.Fatal(read_err)
-		}
+		if read_err == nil {
+			var firstmsg lib.Firstmsg
+			json.Unmarshal(buffer[:n], &firstmsg)
 
-		var firstmsg lib.Firstmsg
-		json.Unmarshal(buffer[:n], &firstmsg)
+			switch firstmsg.Msgtype {
+			case "setup":
+				var all_peers lib.All_peers
+				if _, file_err := os.Stat("peers.json"); file_err == nil {
+					all_peers = lib.Read_peers()
+				}
 
-		switch firstmsg.Msgtype {
-		case "setup":
-			var all_peers lib.All_peers
-			if _, err := os.Stat("peers.json"); err == nil {
-				all_peers = lib.Read_peers()
+				udp.Server_setup(conn, public_addr, all_peers, lpeer, privkey, pubkey_pem, firstmsg.Peerid)
+
+			case "exchange_peers":
+				var temp_peers []lib.Lpeer
+				if _, file_err := os.Stat("temp_peers"); file_err == nil {
+					temp_peers = lib.Read_temp_peers()
+				}
+
+				if lib.Check_peer(firstmsg.Peerid, lib.Read_peers().Offline_peers) {
+					lib.Getback_peer(firstmsg.Peerid, lib.Read_peers())
+				}
+
+				udp.Server_exchange_peers(conn, public_addr, lib.Read_peers(), lpeer, temp_peers, firstmsg.Peerid, privkey)
+			case "ping":
+				udp.Server_ping(conn, public_addr, lpeer)
 			}
-
-			udp.Server_setup(conn, public_addr, all_peers, lpeer, privkey, pubkey_pem, firstmsg.Peerid)
-
-		case "exchange_peers":
-			var temp_peers []lib.Lpeer
-			if _, err := os.Stat("temp_peers"); err == nil {
-				temp_peers = lib.Read_temp_peers()
-			}
-
-			if lib.Check_peer(firstmsg.Peerid, lib.Read_peers().Offline_peers) {
-				lib.Getback_peer(firstmsg.Peerid, lib.Read_peers())
-			}
-
-			udp.Server_exchange_peers(conn, public_addr, lib.Read_peers(), lpeer, temp_peers, firstmsg.Peerid, privkey)
-		case "ping":
-			udp.Server_ping(conn, public_addr, lpeer)
 		}
 
 	}
@@ -69,46 +67,44 @@ func Server_TCP(lpeer lib.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, wg 
 
 	srv, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("qpeer: another process is listening on port 1691 (tcp)")
 	}
 	defer srv.Close()
 
 	for {
-		conn, err := srv.Accept()
-		if err != nil {
-			log.Fatal(err)
+		conn, accept_err := srv.Accept()
+		if accept_err == nil {
+			buffer := make([]byte, 2048)
+
+			n, read_err := conn.Read(buffer)
+			if read_err == nil {
+
+				var firstmsg lib.Firstmsg
+				json.Unmarshal(buffer[:n], &firstmsg)
+
+				switch firstmsg.Msgtype {
+				case "setup":
+					var all_peers lib.All_peers
+					if _, file_err := os.Stat("peers.json"); file_err == nil {
+						all_peers = lib.Read_peers()
+					}
+
+					upnp.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem, firstmsg.Peerid)
+				case "exchange_peers":
+					var temp_peers []lib.Lpeer
+					if _, file_err := os.Stat("temp_peers"); file_err == nil {
+						temp_peers = lib.Read_temp_peers()
+					}
+
+					if lib.Check_peer(firstmsg.Peerid, lib.Read_peers().Offline_peers) {
+						lib.Getback_peer(firstmsg.Peerid, lib.Read_peers())
+					}
+
+					upnp.Server_exchange_peers(conn, lib.Read_peers(), lpeer, temp_peers, firstmsg.Peerid, privkey)
+				}
+			}
 		}
 
-		buffer := make([]byte, 2048)
-
-		n, read_err := conn.Read(buffer)
-		if read_err != nil {
-			log.Fatal(read_err)
-		}
-
-		var firstmsg lib.Firstmsg
-		json.Unmarshal(buffer[:n], &firstmsg)
-
-		switch firstmsg.Msgtype {
-		case "setup":
-			var all_peers lib.All_peers
-			if _, err := os.Stat("peers.json"); err == nil {
-				all_peers = lib.Read_peers()
-			}
-
-			upnp.Server_setup(conn, all_peers, lpeer, privkey, pubkey_pem, firstmsg.Peerid)
-		case "exchange_peers":
-			var temp_peers []lib.Lpeer
-			if _, err := os.Stat("temp_peers"); err == nil {
-				temp_peers = lib.Read_temp_peers()
-			}
-
-			if lib.Check_peer(firstmsg.Peerid, lib.Read_peers().Offline_peers) {
-				lib.Getback_peer(firstmsg.Peerid, lib.Read_peers())
-			}
-
-			upnp.Server_exchange_peers(conn, lib.Read_peers(), lpeer, temp_peers, firstmsg.Peerid, privkey)
-		}
 	}
 }
 
@@ -117,7 +113,7 @@ func Client(conn_udp *net.UDPConn, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pub
 
 	for {
 		var all_peers lib.All_peers
-		if _, err := os.Stat("peers.json"); err == nil {
+		if _, file_err := os.Stat("peers.json"); file_err == nil {
 			all_peers = lib.Read_peers()
 			log.Println("Retrieving peers from db")
 		}
@@ -149,7 +145,7 @@ func Client(conn_udp *net.UDPConn, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pub
 
 		default: //there's peers, let's get more...
 			var temp_peers []lib.Lpeer
-			if _, err := os.Stat("temp_peers"); err == nil {
+			if _, file_err := os.Stat("temp_peers"); file_err == nil {
 				temp_peers = lib.Read_temp_peers()
 			}
 
@@ -194,7 +190,7 @@ func Client(conn_udp *net.UDPConn, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pub
 func Ping(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup) { //r u up?
 	for {
 		var all_peers lib.All_peers
-		if _, err := os.Stat("peers.json"); err == nil {
+		if _, file_err := os.Stat("peers.json"); file_err == nil {
 			all_peers = lib.Read_peers()
 		}
 
@@ -220,7 +216,7 @@ func Ping(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup) { 
 func Getback(conn_udp *net.UDPConn, privkey *rsa.PrivateKey, wg *sync.WaitGroup) { //okay, u up.. get back here
 	for {
 		var all_peers lib.All_peers
-		if _, err := os.Stat("peers.json"); err == nil {
+		if _, file_err := os.Stat("peers.json"); file_err == nil {
 			all_peers = lib.Read_peers()
 		}
 
@@ -262,9 +258,9 @@ func Node(bootstrap_AES_key, bootstrap_ip, bootstrap_port string) {
 		go Getback(conn_udp, privkey, &wg)
 	} else { //upnp
 		localaddr, _ := net.ResolveUDPAddr("udp", ":1691")
-		conn_udp, err := net.ListenUDP("udp", localaddr) //used for just connecting, not listening
-		if err != nil {
-			log.Fatal(err)
+		conn_udp, udp_err := net.ListenUDP("udp", localaddr) //used for just connecting, not listening
+		if udp_err != nil {
+			log.Fatal("qpeer: another process is listening on port 1691 (udp)")
 		}
 		go Server_TCP(lpeer, privkey, pubkey_pem, &wg)
 		go Client(conn_udp, lpeer, privkey, pubkey_pem, bootstrap_AES_key, bootstrap_ip, bootstrap_port, &wg)
@@ -276,9 +272,9 @@ func Node(bootstrap_AES_key, bootstrap_ip, bootstrap_port string) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := os.Remove("temp_peers")
-		if err != nil {
-			log.Fatal(err)
+		filerm_err := os.Remove("temp_peers")
+		if filerm_err != nil {
+			log.Fatal("qpeer: temp_peers file not found")
 		}
 		os.Exit(1)
 	}()
