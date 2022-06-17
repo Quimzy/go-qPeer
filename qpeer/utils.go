@@ -113,7 +113,7 @@ func Find_peer(peerid string, peers []Peer) (string, error) {
 		}
 	}
 
-	return "", nil
+	return "", ErrorPeerNotFound
 }
 
 func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
@@ -127,7 +127,7 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 		}
 	}
 
-	return "", nil
+	return "", ErrorPeerNotFound
 }
 
 // Peer setup
@@ -250,7 +250,10 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 			return nil, nil, rsa_exporting_err
 		}
 
-		RSA_Writekeys(keys)
+		write_err := RSA_Writekeys(keys)
+		if write_err != nil {
+			return nil, nil, write_err
+		}
 		return privkey, pubkey, nil
 	}
 

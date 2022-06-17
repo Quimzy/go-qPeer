@@ -19,3 +19,5 @@ var ErrorVerify = errors.New("qpeer: problem with AES_key verification")
 var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers")
 
 var ErrorPkey = errors.New("qpeer: can't read/use RSA encrypted AES key")
+
+var ErrorPeerNotFound = errors.New("qpeer: peer not found in db")
