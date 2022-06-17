@@ -64,7 +64,7 @@ func Server_setup(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpeer, privk
 
 	kenc_peerinfo, peerinfo_err := send_peerinfo_server(conn, lpeer, pubkey_pem, AES_key)
 	if peerinfo_err != nil {
-		return lib.ErrorKpeerinfo
+		return lib.ErrorKencpeerinfo
 	}
 	peerinfo := lib.Dkenc_peerinfo(kenc_peerinfo, AES_key)
 

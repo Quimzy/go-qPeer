@@ -112,7 +112,7 @@ func Client_setup(all_peers lib.All_peers, lpeer lib.Lpeer, peerip string, port 
 
 	kenc_peerinfo, peerinfo_err := send_key(conn, AES_key, server_pubkey)
 	if peerinfo_err != nil {
-		return lib.ErrorKpeerinfo
+		return lib.ErrorKencpeerinfo
 	}
 
 	peerinfo := lib.Dkenc_peerinfo(kenc_peerinfo, AES_key)

@@ -169,11 +169,12 @@ func RSA_ExportPubkey(pubkey *rsa.PublicKey) (string, error) {
 func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) (RSA_Keys, error) {
 	var keys RSA_Keys
 	keys.RSA_Privkey = RSA_ExportPrivkey(privkey)
+
 	var rsa_err error
 	keys.RSA_Pubkey, rsa_err = RSA_ExportPubkey(pubkey)
 
 	if rsa_err != nil {
-		return RSA_Keys{}, rsa_err
+		return RSA_Keys{}, ErrorRSA
 	}
 
 	return keys, nil
@@ -191,15 +192,15 @@ func RSA_ImportPubkey(pubkey_pem string) (*rsa.PublicKey, error) {
 	dec_pubkey, _ := pem.Decode([]byte(pubkey_pem))
 	pubkey, err := x509.ParsePKIXPublicKey(dec_pubkey.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, ErrorRSA
 	}
-	return pubkey.(*rsa.PublicKey), err
+	return pubkey.(*rsa.PublicKey), nil
 }
 
 func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	pubkey, err := RSA_ImportPubkey(pubkey_pem)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, ErrorRSA
 	}
 
 	return RSA_ImportPrivkey(privkey_pem), pubkey, nil
@@ -209,7 +210,7 @@ func RSA_Writekeys(keys RSA_Keys) error {
 	log.Println("Saving RSA_keys to keys.json")
 	jsonified_keys, err := json.MarshalIndent(keys, "", " ")
 	if err != nil {
-		return err
+		return ErrorRSA
 	}
 	_ = ioutil.WriteFile("keys.json", jsonified_keys, 0664)
 
@@ -220,7 +221,7 @@ func RSA_Readkeys() (RSA_Keys, error) {
 	log.Println("Retrieving RSA_keys from keys.json")
 	reader, err := ioutil.ReadFile("keys.json")
 	if err != nil {
-		return RSA_Keys{}, err
+		return RSA_Keys{}, ErrorReadRSA
 	}
 
 	var keys RSA_Keys
@@ -233,7 +234,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	if _, err := os.Stat("keys.json"); err == nil {
 		keys, rsa_reading_err := RSA_Readkeys()
 		if rsa_reading_err != nil {
-			return nil, nil, rsa_reading_err
+			return nil, nil, ErrorRSA
 		}
 
 		privkey, pubkey, rsa_importing_err := RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
@@ -247,7 +248,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 		var rsa_exporting_err error
 		keys, rsa_exporting_err = RSA_ExportKeys(privkey, pubkey)
 		if rsa_exporting_err != nil {
-			return nil, nil, rsa_exporting_err
+			return nil, nil, ErrorRSA
 		}
 
 		write_err := RSA_Writekeys(keys)
