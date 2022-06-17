@@ -119,8 +119,8 @@ func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 		return lib.ErrorBye
 	}
 
-	bye_err2 := Send_bye(conn, addr) //TODO: find a better variable name
-	if bye_err2 != nil {
+	bye_err = Send_bye(conn, addr)
+	if bye_err != nil {
 		return lib.ErrorBye
 	}
 
@@ -199,7 +199,7 @@ func Client_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 
 	if len(all_peers.Peers) >= 5 {
 		bye, bye_err := send_temp_peers(conn, addr, privkey, all_peers.Peers, AES_key)
-		if bye_err != nil && bye != "bye" {
+		if bye_err != nil || bye != "bye" {
 			return lib.ErrorBye
 		}
 	} else {
