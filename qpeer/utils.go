@@ -102,32 +102,32 @@ func Check_temp_peers(peerid string, temp_peers []Lpeer) bool {
 	return false
 }
 
-func Find_peer(peerid string, peers []Peer) string {
+func Find_peer(peerid string, peers []Peer) (string, error) {
 	for _, n_peer := range peers {
 		if n_peer.Peerid == peerid {
 			jsonified_peer, err := json.Marshal(n_peer)
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
-			return string(jsonified_peer)
+			return string(jsonified_peer), nil
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
-func Find_temp_peer(peerid string, temp_peers []Lpeer) string {
+func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 	for _, n_peer := range temp_peers {
 		if n_peer.Peerid == peerid {
 			jsonified_peer, err := json.Marshal(n_peer)
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
-			return string(jsonified_peer)
+			return string(jsonified_peer), nil
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
 // Peer setup
@@ -151,10 +151,10 @@ func RSA_ExportPrivkey(privkey *rsa.PrivateKey) string {
 	return RSA_Privkey
 }
 
-func RSA_ExportPubkey(pubkey *rsa.PublicKey) string {
+func RSA_ExportPubkey(pubkey *rsa.PublicKey) (string, error) {
 	pubkey_bytes, err := x509.MarshalPKIXPublicKey(pubkey)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	RSA_Pubkey := string(pem.EncodeToMemory(
 		&pem.Block{
@@ -163,15 +163,20 @@ func RSA_ExportPubkey(pubkey *rsa.PublicKey) string {
 		},
 	))
 
-	return RSA_Pubkey
+	return RSA_Pubkey, nil
 }
 
-func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) RSA_Keys {
+func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) (RSA_Keys, error) {
 	var keys RSA_Keys
 	keys.RSA_Privkey = RSA_ExportPrivkey(privkey)
-	keys.RSA_Pubkey = RSA_ExportPubkey(pubkey)
+	var rsa_err error
+	keys.RSA_Pubkey, rsa_err = RSA_ExportPubkey(pubkey)
 
-	return keys
+	if rsa_err != nil {
+		return RSA_Keys{}, rsa_err
+	}
+
+	return keys, nil
 }
 
 func RSA_ImportPrivkey(privkey_pem string) *rsa.PrivateKey {
@@ -182,85 +187,109 @@ func RSA_ImportPrivkey(privkey_pem string) *rsa.PrivateKey {
 
 }
 
-func RSA_ImportPubkey(pubkey_pem string) *rsa.PublicKey {
+func RSA_ImportPubkey(pubkey_pem string) (*rsa.PublicKey, error) {
 	dec_pubkey, _ := pem.Decode([]byte(pubkey_pem))
 	pubkey, err := x509.ParsePKIXPublicKey(dec_pubkey.Bytes)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return pubkey.(*rsa.PublicKey)
+	return pubkey.(*rsa.PublicKey), err
 }
 
-func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey) {
-	return RSA_ImportPrivkey(privkey_pem), RSA_ImportPubkey(pubkey_pem)
+func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
+	pubkey, err := RSA_ImportPubkey(pubkey_pem)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return RSA_ImportPrivkey(privkey_pem), pubkey, nil
 }
 
-func RSA_Writekeys(keys RSA_Keys) {
+func RSA_Writekeys(keys RSA_Keys) error {
 	log.Println("Saving RSA_keys to keys.json")
 	jsonified_keys, err := json.MarshalIndent(keys, "", " ")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	_ = ioutil.WriteFile("keys.json", jsonified_keys, 0664)
+
+	return nil
 }
 
-func RSA_Readkeys() RSA_Keys {
+func RSA_Readkeys() (RSA_Keys, error) {
 	log.Println("Retrieving RSA_keys from keys.json")
 	reader, err := ioutil.ReadFile("keys.json")
 	if err != nil {
-		log.Fatal(err)
+		return RSA_Keys{}, err
 	}
 
 	var keys RSA_Keys
 	json.Unmarshal([]byte(reader), &keys)
 
-	return keys
+	return keys, nil
 }
 
-func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey) {
+func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	if _, err := os.Stat("keys.json"); err == nil {
-		keys := RSA_Readkeys()
-		return RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
+		keys, rsa_reading_err := RSA_Readkeys()
+		if rsa_reading_err != nil {
+			return nil, nil, rsa_reading_err
+		}
+
+		privkey, pubkey, rsa_importing_err := RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
+		return privkey, pubkey, rsa_importing_err
 
 	} else {
 		var keys RSA_Keys
 		log.Println("Generating RSA_keys")
 		privkey, pubkey := RSA_keygen()
-		keys = RSA_ExportKeys(privkey, pubkey)
+
+		var rsa_exporting_err error
+		keys, rsa_exporting_err = RSA_ExportKeys(privkey, pubkey)
+		if rsa_exporting_err != nil {
+			return nil, nil, rsa_exporting_err
+		}
+
 		RSA_Writekeys(keys)
-		return privkey, pubkey
+		return privkey, pubkey, nil
 	}
 
 }
 
-func Read_lpeer() Lpeer {
+func Read_lpeer() (Lpeer, error) {
 	log.Println("Retrieving lpeer from lpeer.json")
-	reader, err := ioutil.ReadFile("lpeer.json")
-	if err != nil {
-		log.Fatal(err)
+	reader, read_err := ioutil.ReadFile("lpeer.json")
+	if read_err != nil {
+		return Lpeer{}, read_err
 	}
 	var lpeer Lpeer
 	json.Unmarshal([]byte(reader), &lpeer)
 
-	return lpeer
+	return lpeer, nil
 }
 
-func Write_lpeer(lpeer Lpeer) {
+func Write_lpeer(lpeer Lpeer) error {
 	log.Println("Saving lpeer to lpeer.json")
 	jsonified_lpeer, err := json.Marshal(lpeer)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	_ = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
+	return nil
 }
 
-func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*net.UDPConn, Lpeer) {
+func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*net.UDPConn, Lpeer, error) {
 	//Setting Proto & Endpoints
 	conn, protocol, endpoints := SetProto(bootstrap_AES_key, signal_ip, signal_port)
 
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil {
-		lpeer = Read_lpeer()
+		var lpeer_err error
+
+		lpeer, lpeer_err = Read_lpeer()
+		if lpeer_err != nil {
+			return nil, Lpeer{}, lpeer_err
+		}
 
 		if lpeer.Peerid != Sha1_encrypt(pubkey_pem) { //peerid is always linked with RSA public key
 			lpeer.Peerid = Sha1_encrypt(pubkey_pem)
@@ -271,9 +300,18 @@ func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*n
 			lpeer.Endpoints = endpoints
 		}
 
-		if lpeer != Read_lpeer() { //if lpeer has changed
-			Write_lpeer(lpeer)
+		saved_lpeer, read_err := Read_lpeer()
+		if read_err != nil {
+			return nil, Lpeer{}, read_err
 		}
+
+		if lpeer != saved_lpeer { //if lpeer has changed
+			write_err := Write_lpeer(lpeer)
+			if write_err != nil {
+				return nil, Lpeer{}, read_err
+			}
+		}
+
 	} else {
 		log.Println("Generating lpeer")
 
@@ -284,35 +322,39 @@ func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*n
 		lpeer.Protocol = protocol
 		lpeer.Endpoints = endpoints
 
-		Write_lpeer(lpeer)
+		write_err := Write_lpeer(lpeer)
+		if write_err != nil {
+			return nil, Lpeer{}, write_err
+		}
 	}
 
 	log.Println("Your peerid is:", lpeer.Peerid)
-	return conn, lpeer
+	return conn, lpeer, nil
 }
 
 // Encryption Functions
 
-func RSA_encrypt(msg string, pubkey *rsa.PublicKey) string {
+func RSA_encrypt(msg string, pubkey *rsa.PublicKey) (string, error) {
 	enc_msg, err := rsa.EncryptOAEP(
 		sha1.New(),
 		rand.Reader,
 		pubkey,
 		[]byte(msg),
 		nil)
+
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	return string(enc_msg)
+	return string(enc_msg), nil
 }
 
-func RSA_decrypt(enc_msg string, privkey *rsa.PrivateKey) string {
+func RSA_decrypt(enc_msg string, privkey *rsa.PrivateKey) (string, error) {
 	msg, err := privkey.Decrypt(nil, []byte(enc_msg), &rsa.OAEPOptions{Hash: crypto.SHA1})
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	return string(msg)
+	return string(msg), err
 }
 
 func AES_keygen() string {
@@ -320,103 +362,133 @@ func AES_keygen() string {
 	return key
 }
 
-func AES_encrypt(msg string, key string) string {
+func AES_encrypt(msg string, key string) (string, error) {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 
 	enc_msg := gcm.Seal(nonce, nonce, []byte(msg), nil)
-	return string(enc_msg)
+	return string(enc_msg), err
 }
 
-func AES_decrypt(enc_msg string, key string) string {
+func AES_decrypt(enc_msg string, key string) (string, error) {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	nonceSize := gcm.NonceSize()
 	if len(enc_msg) < nonceSize {
-		log.Fatal(err)
+		return "", err
 	}
 
 	nonce, enc_msg := enc_msg[:nonceSize], enc_msg[nonceSize:]
 
 	msg, err := gcm.Open(nil, []byte(nonce), []byte(enc_msg), nil)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	return string(msg)
+	return string(msg), nil
 }
 
-func Penc_AES(AES_key string, pubkey *rsa.PublicKey) string { // Public Key encryption for AES_key
-	enc_AES_key := base64.StdEncoding.EncodeToString([]byte(RSA_encrypt(AES_key, pubkey)))
+func Penc_AES(AES_key string, pubkey *rsa.PublicKey) (string, error) { // Public Key encryption for AES_key
+	penc_AES, rsa_err := RSA_encrypt(AES_key, pubkey)
+	if rsa_err != nil {
+		return "", rsa_err
+	}
+	enc_AES_key := base64.StdEncoding.EncodeToString([]byte(penc_AES))
 
-	return enc_AES_key
+	return enc_AES_key, rsa_err
 }
 
-func Dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) string {
+func Dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) (string, error) {
 	b64dec_AES_key, err := base64.StdEncoding.DecodeString(enc_AES_key)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	AES_key := RSA_decrypt(string(b64dec_AES_key), privkey)
 
-	return AES_key
+	AES_key, rsa_err := RSA_decrypt(string(b64dec_AES_key), privkey)
+	if rsa_err != nil {
+		return "", rsa_err
+	}
+
+	return AES_key, nil
 }
 
-func Kenc_peerinfo(peerinfo Peerinfo, AES_key string) string { //Key Encryption (AES)
+func Kenc_peerinfo(peerinfo Peerinfo, AES_key string) (string, error) { //Key Encryption (AES)
 	jsonified_peerinfo, err := json.Marshal(peerinfo) //From struct to a string
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	kenc_peerinfo := AES_encrypt(string(jsonified_peerinfo), AES_key) //Encrypting peerinfo with Key
 
-	return base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo))
+	kenc_peerinfo, aes_err := AES_encrypt(string(jsonified_peerinfo), AES_key) //Encrypting peerinfo with Key
+	if aes_err != nil {
+		return "", aes_err
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), nil
 }
 
-func Dkenc_peerinfo(kenc_peerinfo string, AES_key string) Peerinfo { // Decrypt Key Encryption (AES)
-	b64dec_peerinfo, _ := base64.StdEncoding.DecodeString(kenc_peerinfo) //Decoding base64
-	kdec_peerinfo := AES_decrypt(string(b64dec_peerinfo), AES_key)       //Decrypting peerinfo with Key
+func Dkenc_peerinfo(kenc_peerinfo string, AES_key string) (Peerinfo, error) { // Decrypt Key Encryption (AES)
+	b64dec_peerinfo, _ := base64.StdEncoding.DecodeString(kenc_peerinfo)    //Decoding base64
+	kdec_peerinfo, aes_err := AES_decrypt(string(b64dec_peerinfo), AES_key) //Decrypting peerinfo with Key
+	if aes_err != nil {
+		return Peerinfo{}, aes_err
+	}
 
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(kdec_peerinfo), &peerinfo)
 
-	return peerinfo
+	return peerinfo, nil
 }
 
-func Kenc_verify(msg string, key string) string {
-	kenc_verify := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(msg, key)))
-	return kenc_verify
+func Kenc_verify(msg string, key string) (string, error) {
+	kenc_verify, aes_err := AES_encrypt(msg, key)
+	if aes_err != nil {
+		return "", aes_err
+	}
+
+	b64kenc_verify := base64.StdEncoding.EncodeToString([]byte(kenc_verify))
+
+	return b64kenc_verify, nil
 }
 
-func Dkenc_verify(enc_msg string, key string) string {
+func Dkenc_verify(enc_msg string, key string) (string, error) {
 	b64dec_verify, _ := base64.StdEncoding.DecodeString(enc_msg)
-	return AES_decrypt(string(b64dec_verify), key)
+	kdec_verify, aes_err := AES_decrypt(string(b64dec_verify), key)
+	if aes_err != nil {
+		return "", aes_err
+	}
+
+	return kdec_verify, nil
 }
 
-func Kenc_lpeer(lpeer Lpeer, AES_key string) string {
+func Kenc_lpeer(lpeer Lpeer, AES_key string) (string, error) {
 	jsonified_lpeer, err := json.Marshal([]Lpeer{lpeer})
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	kenc_lpeer := AES_encrypt(string(jsonified_lpeer), AES_key) //Encrypting lpeer with Key
 
-	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer))
+	kenc_lpeer, aes_err := AES_encrypt(string(jsonified_lpeer), AES_key) //Encrypting lpeer with Key
+	if aes_err != nil {
+		return "", aes_err
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(kenc_lpeer)), nil
 }
 
 // MsgTypes
@@ -451,10 +523,17 @@ func Init_enc(peerid string, pubkey_pem string) Init {
 
 // Saving peer
 
-func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey, all_peers All_peers) All_peers {
+func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.PublicKey, all_peers All_peers) (All_peers, error) {
 	jsonified_kenc_peerinfo, _ := json.Marshal(peerinfo)
-	kenc_peerinfo := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
-	penc_key := RSA_encrypt(AES_key, pubkey)
+	kenc_peerinfo, aes_err := AES_encrypt(string(jsonified_kenc_peerinfo), AES_key)
+	if aes_err != nil {
+		return All_peers{}, aes_err
+	}
+
+	penc_key, rsa_err := RSA_encrypt(AES_key, pubkey)
+	if rsa_err != nil {
+		return All_peers{}, aes_err
+	}
 
 	peer := Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key))}
 
@@ -462,96 +541,137 @@ func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 		all_peers.Peers = append(all_peers.Peers, peer)
 	}
 
-	return all_peers
+	return all_peers, nil
 
 }
 
-func Write_peers(all_peers All_peers) {
+func Write_peers(all_peers All_peers) error {
 	jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	_ = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
+	return nil
 }
 
-func Read_peers() All_peers {
+func Read_peers() (All_peers, error) {
 	reader, err := ioutil.ReadFile("peers.json")
 	if err != nil {
-		log.Fatal(err)
+		return All_peers{}, err
 	}
 
 	var peers All_peers
 	json.Unmarshal([]byte(reader), &peers)
 
-	return peers
+	return peers, nil
 }
 
-func Decrypt_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Peer {
+func Decrypt_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) (Peer, error) {
 	var peer Peer
 
-	if len(Find_peer(peerid, peers)) > 0 {
-		json.Unmarshal([]byte(Find_peer(peerid, peers)), &peer)
+	if jsonized_peer, err := Find_peer(peerid, peers); err == nil { //if peerid found
+		json.Unmarshal([]byte(jsonized_peer), &peer)
+	} else {
+		return Peer{}, err
 	}
 
-	peer.AES_key = Dpenc_AES(peer.AES_key, privkey)
-	jsonified_peerinfo, err := json.Marshal(Dkenc_peerinfo(peer.Peerinfo, peer.AES_key))
+	var aes_err error
+
+	peer.AES_key, aes_err = Dpenc_AES(peer.AES_key, privkey)
+	if aes_err != nil {
+		return Peer{}, aes_err
+	}
+
+	peerinfo, peerinfo_err := Dkenc_peerinfo(peer.Peerinfo, peer.AES_key)
+	if peerinfo_err != nil {
+		return Peer{}, peerinfo_err
+	}
+
+	jsonified_peerinfo, err := json.Marshal(peerinfo)
 	if err != nil {
-		log.Fatal(err)
+		return Peer{}, err
 	}
 	peer.Peerinfo = string(jsonified_peerinfo)
 
-	return peer
-
+	return peer, nil
 }
 
-func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) Lpeer {
-	peer := Decrypt_peer(peerid, privkey, peers)
+func Return_temp_peer(peerid string, privkey *rsa.PrivateKey, peers []Peer) (Lpeer, error) {
+	peer, peer_err := Decrypt_peer(peerid, privkey, peers)
+	if peer_err != nil {
+		return Lpeer{}, peer_err
+	}
 
 	var peerinfo Peerinfo
 	json.Unmarshal([]byte(peer.Peerinfo), &peerinfo)
 
 	temp_peer := Lpeer{peer.Peerid, peerinfo.Protocol, peerinfo.Endpoints}
 
-	return temp_peer
+	return temp_peer, nil
 }
 
 // Remove peer if its offline (or Get it back if it becomes online)
 
-func Remove_peer(peerid string, all_peers All_peers) {
+func Remove_peer(peerid string, all_peers All_peers) error {
 	if Check_peer(peerid, all_peers.Peers) && !Check_peer(peerid, all_peers.Offline_peers) {
 		var del_peer Peer
-		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
+
+		if jsonized_peer, err := Find_peer(peerid, all_peers.Peers); err == nil { //if peerid found
+			var peer Peer
+			json.Unmarshal([]byte(jsonized_peer), &peer)
+		} else {
+			return err
+		}
 
 		all_peers.Peers[Index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
 		all_peers.Peers = all_peers.Peers[:len(all_peers.Peers)-1]
 		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
 
-		Write_peers(all_peers)
+		write_err := Write_peers(all_peers)
+		if write_err != nil {
+			return write_err
+		}
 	}
+
+	return nil
 }
 
-func Getback_peer(peerid string, all_peers All_peers) {
+func Getback_peer(peerid string, all_peers All_peers) error {
 	if !Check_peer(peerid, all_peers.Peers) && Check_peer(peerid, all_peers.Offline_peers) {
 		var del_peer Peer
-		json.Unmarshal([]byte(Find_peer(peerid, all_peers.Peers)), &del_peer)
+		if jsonized_peer, err := Find_peer(peerid, all_peers.Peers); err == nil { //if peerid found
+			var peer Peer
+			json.Unmarshal([]byte(jsonized_peer), &peer)
+		} else {
+			return err
+		}
 
 		all_peers.Offline_peers[Index(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1] //Remove peer from offline_peer
 		all_peers.Offline_peers = all_peers.Offline_peers[:len(all_peers.Offline_peers)-1]
 		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
 
-		Write_peers(all_peers)
+		write_err := Write_peers(all_peers)
+		if write_err != nil {
+			return write_err
+		}
 	}
+
+	return nil
 }
 
 // Exchange temp_peers
 
-func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer {
+func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) ([]Lpeer, error) {
 	var temp_peers []Lpeer
 
 	if len(peers) <= 5 {
 		for _, peer := range peers {
-			temp_peer := Return_temp_peer(peer.Peerid, privkey, peers)
+			temp_peer, temp_peer_err := Return_temp_peer(peer.Peerid, privkey, peers)
+			if temp_peer_err != nil {
+				return []Lpeer{}, temp_peer_err
+			}
+
 			temp_peers = append(temp_peers, temp_peer)
 		}
 	} else {
@@ -560,13 +680,17 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) []Lpeer {
 			peer := peers[random.Intn(len(peers))]
 			switch Check_temp_peers(peer.Peerid, temp_peers) {
 			case false:
-				temp_peer := Return_temp_peer(peer.Peerid, privkey, peers)
+				temp_peer, temp_peer_err := Return_temp_peer(peer.Peerid, privkey, peers)
+				if temp_peer_err != nil {
+					return []Lpeer{}, temp_peer_err
+				}
+
 				temp_peers = append(temp_peers, temp_peer)
 			}
 		}
 	}
 
-	return temp_peers
+	return temp_peers, nil
 }
 
 func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer { //Share from temp_peers file
@@ -589,43 +713,59 @@ func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer
 	return temp_peers
 }
 
-func Write_temp_peers(temp_peers []Lpeer) {
+func Write_temp_peers(temp_peers []Lpeer) error {
 	jsonified_temp_peers, err := json.Marshal(temp_peers)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	_ = ioutil.WriteFile("temp_peers", jsonified_temp_peers, 0664)
+	return nil
 }
 
-func Read_temp_peers() []Lpeer {
+func Read_temp_peers() ([]Lpeer, error) {
 	reader, err := ioutil.ReadFile("temp_peers")
 	if err != nil {
-		log.Fatal(err)
+		return []Lpeer{}, err
 	}
 
 	var temp_peers []Lpeer
 	json.Unmarshal([]byte(reader), &temp_peers)
 
-	return temp_peers
+	return temp_peers, nil
 }
 
-func Share_temp_peers(temp_peers []Lpeer, AES_key string) string {
+func Share_temp_peers(temp_peers []Lpeer, AES_key string) (string, error) {
 	jsonified_temp_peers, _ := json.Marshal(temp_peers)
-	enc_temp_peers := base64.StdEncoding.EncodeToString([]byte(AES_encrypt(string(jsonified_temp_peers), AES_key)))
+	kenc_temp_peers, aes_err := AES_encrypt(string(jsonified_temp_peers), AES_key)
+	if aes_err != nil {
+		return "", aes_err
+	}
+	enc_temp_peers := base64.StdEncoding.EncodeToString([]byte(kenc_temp_peers))
 
-	return enc_temp_peers
+	return enc_temp_peers, nil
 }
 
-func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer) {
+func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer) error {
 	var recvd_temp_peers []Lpeer
 
 	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
-	json.Unmarshal([]byte(AES_decrypt(string(b64dec_enc_temp_peers), AES_key)), &recvd_temp_peers)
+
+	kdec_temp_peers, aes_err := AES_decrypt(string(b64dec_enc_temp_peers), AES_key)
+	if aes_err != nil {
+		return aes_err
+	}
+
+	json.Unmarshal([]byte(kdec_temp_peers), &recvd_temp_peers)
 
 	var temp_peers []Lpeer
 	if _, err := os.Stat("temp_peers"); err == nil {
-		temp_peers = Read_temp_peers()
+		var temp_peers_err error
+
+		temp_peers, temp_peers_err = Read_temp_peers()
+		if temp_peers_err != nil {
+			return temp_peers_err
+		}
 	}
 
 	for _, temp_peer := range recvd_temp_peers {
@@ -636,12 +776,10 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 		}
 	}
 
-	Write_temp_peers(temp_peers)
-}
+	write_err := Write_temp_peers(temp_peers)
+	if write_err != nil {
+		return write_err
+	}
 
-/*
-How to make qPeer compatible with Stun-UDP, Stun-TCP & UPNP?
-- Make a new node.go file to work with each method?
-- Make utils compatible with all methods:
-	-Improve Endpoints to work with UPnP as well
-*/
+	return nil
+}
