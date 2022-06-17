@@ -144,7 +144,10 @@ func Server_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 	//TODO: check if recvd data is temp_peers
 	if recvd != "bye" {
 		lib.Save_temp_peers(recvd, privkey, all_peers, peer.AES_key, lpeer)
-		Send_bye(conn, addr)
+		bye_err := Send_bye(conn, addr)
+		if bye_err != nil {
+			return lib.ErrorBye
+		}
 	}
 
 	return nil
