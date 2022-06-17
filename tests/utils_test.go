@@ -45,8 +45,8 @@ func TestRSA_keygen(t *testing.T) {
 }
 
 func TestRSA_Readkeys(t *testing.T) {
-	keys := lib.RSA_Readkeys()
-	if fmt.Sprintf("%T", keys) != "lib.RSA_Keys" {
+	keys, rsa_err := lib.RSA_Readkeys()
+	if fmt.Sprintf("%T", keys) != "lib.RSA_Keys" || rsa_err != nil {
 		t.Errorf("RSA error. The keys stored are not the correct type")
 	}
 }
