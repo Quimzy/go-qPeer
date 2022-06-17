@@ -4,7 +4,6 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 
 	lib "github.com/quark-io/go-qPeer/qpeer"
@@ -257,7 +256,7 @@ func Client_bootstrap(all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.Pri
 
 	conn, err := net.Dial(protocol, address)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer conn.Close()
 

@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
 
@@ -50,16 +49,15 @@ func IsPeeridValid(conn *net.UDPConn, peerid string, peerip string, port string)
 	addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%s", peerip, port))
 
 	_, write_err := conn.WriteToUDP([]byte("ping"), addr)
-	if write_err != nil {
-		log.Fatal(write_err)
-	}
 
 	buffer := make([]byte, 1024)
 	n, read_err := conn.Read(buffer)
-	if read_err != nil {
-		log.Fatal(read_err)
-	}
+
 	recvd_peerid := string(buffer[:n])
+
+	if write_err != nil || read_err != nil {
+		return false
+	}
 
 	return recvd_peerid == peerid
 }
