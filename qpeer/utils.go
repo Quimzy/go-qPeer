@@ -154,7 +154,7 @@ func RSA_ExportPrivkey(privkey *rsa.PrivateKey) string {
 func RSA_ExportPubkey(pubkey *rsa.PublicKey) (string, error) {
 	pubkey_bytes, err := x509.MarshalPKIXPublicKey(pubkey)
 	if err != nil {
-		return "", err
+		return "", ErrorRSAPubKey
 	}
 	RSA_Pubkey := string(pem.EncodeToMemory(
 		&pem.Block{
@@ -174,7 +174,7 @@ func RSA_ExportKeys(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) (RSA_Keys, e
 	keys.RSA_Pubkey, rsa_err = RSA_ExportPubkey(pubkey)
 
 	if rsa_err != nil {
-		return RSA_Keys{}, ErrorRSA
+		return RSA_Keys{}, ErrorExportRSA
 	}
 
 	return keys, nil
@@ -192,7 +192,7 @@ func RSA_ImportPubkey(pubkey_pem string) (*rsa.PublicKey, error) {
 	dec_pubkey, _ := pem.Decode([]byte(pubkey_pem))
 	pubkey, err := x509.ParsePKIXPublicKey(dec_pubkey.Bytes)
 	if err != nil {
-		return nil, ErrorRSA
+		return nil, ErrorRSAPubKey
 	}
 	return pubkey.(*rsa.PublicKey), nil
 }
@@ -200,7 +200,7 @@ func RSA_ImportPubkey(pubkey_pem string) (*rsa.PublicKey, error) {
 func RSA_ImportKeys(privkey_pem string, pubkey_pem string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	pubkey, err := RSA_ImportPubkey(pubkey_pem)
 	if err != nil {
-		return nil, nil, ErrorRSA
+		return nil, nil, ErrorImportRSA
 	}
 
 	return RSA_ImportPrivkey(privkey_pem), pubkey, nil
@@ -210,7 +210,7 @@ func RSA_Writekeys(keys RSA_Keys) error {
 	log.Println("Saving RSA_keys to keys.json")
 	jsonified_keys, err := json.MarshalIndent(keys, "", " ")
 	if err != nil {
-		return ErrorRSA
+		return ErrorWriteRSA
 	}
 	_ = ioutil.WriteFile("keys.json", jsonified_keys, 0664)
 
@@ -234,12 +234,11 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	if _, err := os.Stat("keys.json"); err == nil {
 		keys, rsa_reading_err := RSA_Readkeys()
 		if rsa_reading_err != nil {
-			return nil, nil, ErrorRSA
+			return nil, nil, rsa_reading_err
 		}
 
 		privkey, pubkey, rsa_importing_err := RSA_ImportKeys(keys.RSA_Privkey, keys.RSA_Pubkey)
 		return privkey, pubkey, rsa_importing_err
-
 	} else {
 		var keys RSA_Keys
 		log.Println("Generating RSA_keys")
@@ -248,7 +247,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 		var rsa_exporting_err error
 		keys, rsa_exporting_err = RSA_ExportKeys(privkey, pubkey)
 		if rsa_exporting_err != nil {
-			return nil, nil, ErrorRSA
+			return nil, nil, rsa_exporting_err
 		}
 
 		write_err := RSA_Writekeys(keys)
@@ -264,7 +263,7 @@ func Read_lpeer() (Lpeer, error) {
 	log.Println("Retrieving lpeer from lpeer.json")
 	reader, read_err := ioutil.ReadFile("lpeer.json")
 	if read_err != nil {
-		return Lpeer{}, read_err
+		return Lpeer{}, ErrorReadLpeer
 	}
 	var lpeer Lpeer
 	json.Unmarshal([]byte(reader), &lpeer)
@@ -276,7 +275,7 @@ func Write_lpeer(lpeer Lpeer) error {
 	log.Println("Saving lpeer to lpeer.json")
 	jsonified_lpeer, err := json.Marshal(lpeer)
 	if err != nil {
-		return err
+		return ErrorWriteLpeer
 	}
 	_ = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 	return nil
@@ -312,7 +311,7 @@ func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*n
 		if lpeer != saved_lpeer { //if lpeer has changed
 			write_err := Write_lpeer(lpeer)
 			if write_err != nil {
-				return nil, Lpeer{}, read_err
+				return nil, Lpeer{}, write_err
 			}
 		}
 
@@ -347,7 +346,7 @@ func RSA_encrypt(msg string, pubkey *rsa.PublicKey) (string, error) {
 		nil)
 
 	if err != nil {
-		return "", err
+		return "", ErrorRSA
 	}
 
 	return string(enc_msg), nil
@@ -356,9 +355,10 @@ func RSA_encrypt(msg string, pubkey *rsa.PublicKey) (string, error) {
 func RSA_decrypt(enc_msg string, privkey *rsa.PrivateKey) (string, error) {
 	msg, err := privkey.Decrypt(nil, []byte(enc_msg), &rsa.OAEPOptions{Hash: crypto.SHA1})
 	if err != nil {
-		return "", err
+		return "", ErrorRSA
 	}
-	return string(msg), err
+
+	return string(msg), nil
 }
 
 func AES_keygen() string {
@@ -369,41 +369,41 @@ func AES_keygen() string {
 func AES_encrypt(msg string, key string) (string, error) {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		return "", err
+		return "", ErrorAES
 	}
 
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
-		return "", err
+		return "", ErrorAES
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 
 	enc_msg := gcm.Seal(nonce, nonce, []byte(msg), nil)
-	return string(enc_msg), err
+	return string(enc_msg), nil
 }
 
 func AES_decrypt(enc_msg string, key string) (string, error) {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		return "", err
+		return "", ErrorAES
 	}
 
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
-		return "", err
+		return "", ErrorAES
 	}
 
 	nonceSize := gcm.NonceSize()
 	if len(enc_msg) < nonceSize {
-		return "", err
+		return "", ErrorAES
 	}
 
 	nonce, enc_msg := enc_msg[:nonceSize], enc_msg[nonceSize:]
 
 	msg, err := gcm.Open(nil, []byte(nonce), []byte(enc_msg), nil)
 	if err != nil {
-		return "", err
+		return "", ErrorAES
 	}
 
 	return string(msg), nil
@@ -416,7 +416,7 @@ func Penc_AES(AES_key string, pubkey *rsa.PublicKey) (string, error) { // Public
 	}
 	enc_AES_key := base64.StdEncoding.EncodeToString([]byte(penc_AES))
 
-	return enc_AES_key, rsa_err
+	return enc_AES_key, nil
 }
 
 func Dpenc_AES(enc_AES_key string, privkey *rsa.PrivateKey) (string, error) {
@@ -536,7 +536,7 @@ func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 
 	penc_key, rsa_err := RSA_encrypt(AES_key, pubkey)
 	if rsa_err != nil {
-		return All_peers{}, aes_err
+		return All_peers{}, rsa_err
 	}
 
 	peer := Peer{peerid, base64.StdEncoding.EncodeToString([]byte(kenc_peerinfo)), base64.StdEncoding.EncodeToString([]byte(penc_key))}
@@ -552,7 +552,7 @@ func Save_peer(peerid string, peerinfo Peerinfo, AES_key string, pubkey *rsa.Pub
 func Write_peers(all_peers All_peers) error {
 	jsonified_peers, err := json.MarshalIndent(all_peers, "", " ")
 	if err != nil {
-		return err
+		return ErrorWritePeers
 	}
 
 	_ = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
@@ -562,7 +562,7 @@ func Write_peers(all_peers All_peers) error {
 func Read_peers() (All_peers, error) {
 	reader, err := ioutil.ReadFile("peers.json")
 	if err != nil {
-		return All_peers{}, err
+		return All_peers{}, ErrorReadPeers
 	}
 
 	var peers All_peers
@@ -720,7 +720,7 @@ func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer
 func Write_temp_peers(temp_peers []Lpeer) error {
 	jsonified_temp_peers, err := json.Marshal(temp_peers)
 	if err != nil {
-		return err
+		return ErrorWriteTempPeers
 	}
 
 	_ = ioutil.WriteFile("temp_peers", jsonified_temp_peers, 0664)
@@ -730,7 +730,7 @@ func Write_temp_peers(temp_peers []Lpeer) error {
 func Read_temp_peers() ([]Lpeer, error) {
 	reader, err := ioutil.ReadFile("temp_peers")
 	if err != nil {
-		return []Lpeer{}, err
+		return []Lpeer{}, ErrorReadTempPeers
 	}
 
 	var temp_peers []Lpeer

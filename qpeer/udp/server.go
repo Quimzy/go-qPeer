@@ -58,7 +58,7 @@ func Server_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 
 	penc_AES_key, penc_err := send_init(conn, addr, init)
 	if penc_err != nil {
-		return lib.ErrorPkey
+		return lib.ErrorPenckey
 	}
 	AES_key := lib.Dpenc_AES(penc_AES_key, privkey)
 
