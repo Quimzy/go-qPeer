@@ -11,20 +11,20 @@ import (
 // Setup
 
 func greet_setup(conn *net.UDPConn, addr *net.UDPAddr, peerid string) (lib.Init, error) {
-	msg, err := json.Marshal(lib.Setup(peerid))
-	if err != nil {
-		return lib.Init{}, err
+	msg, json_err := json.Marshal(lib.Setup(peerid))
+	if json_err != nil {
+		return lib.Init{}, json_err
 	}
 	_, write_err := conn.WriteToUDP(msg, addr)
 	if write_err != nil {
-		return lib.Init{}, err
+		return lib.Init{}, write_err
 	}
 
 	buffer := make([]byte, 2048)
 
 	n, read_err := conn.Read(buffer)
 	if read_err != nil {
-		return lib.Init{}, err
+		return lib.Init{}, write_err
 	}
 
 	var init lib.Init
@@ -37,7 +37,7 @@ func greet_setup(conn *net.UDPConn, addr *net.UDPAddr, peerid string) (lib.Init,
 func send_key(conn *net.UDPConn, addr *net.UDPAddr, AES_key string, pubkey *rsa.PublicKey) (string, error) {
 	enc_AES_key, aes_err := lib.Penc_AES(AES_key, pubkey)
 	if aes_err != nil {
-		return "", lib.ErrorAES
+		return "", aes_err
 	}
 
 	_, write_err := conn.WriteToUDP([]byte(enc_AES_key), addr)
@@ -63,7 +63,7 @@ func send_peerinfo(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer, pubkey
 
 	kenc_lpeerinfo, kenc_lpeerinfo_error := lib.Kenc_peerinfo(lpeerinfo, AES_key)
 	if kenc_lpeerinfo_error != nil {
-		return "", lib.ErrorKencpeerinfo
+		return "", kenc_lpeerinfo_error
 	}
 
 	_, write_err := conn.WriteToUDP([]byte(kenc_lpeerinfo), addr)
@@ -93,7 +93,7 @@ func Send_bye(conn *net.UDPConn, addr *net.UDPAddr) error {
 func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, pubkey_pem string) error {
 	pubkey, rsa_err := lib.RSA_ImportPubkey(pubkey_pem)
 	if rsa_err != nil {
-		return lib.ErrorRSA
+		return rsa_err
 	}
 
 	init, greet_err := greet_setup(conn, addr, lpeer.Peerid)
@@ -107,7 +107,7 @@ func Client_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers,
 
 	server_pubkey, rsa_err2 := lib.RSA_ImportPubkey(init.Pubkey_pem)
 	if rsa_err2 != nil {
-		return lib.ErrorRSA
+		return rsa_err2
 	}
 
 	AES_key := lib.AES_keygen()
@@ -226,11 +226,15 @@ func Client_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 		return dkenc_verify_err
 	}
 
-	enc_temp_peers, temp_peers_error := send_dkenc_verify(conn, addr, dkenc_verify)
-	if temp_peers_error != nil {
+	enc_temp_peers, temp_peers_err := send_dkenc_verify(conn, addr, dkenc_verify)
+	if temp_peers_err != nil {
 		return lib.ErrorRcvTempPeers
 	}
-	lib.Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+
+	save_temp_peers_err := lib.Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+	if save_temp_peers_err != nil {
+		return save_temp_peers_err
+	}
 
 	if len(all_peers.Peers) >= 5 {
 		bye, bye_err := send_temp_peers(conn, addr, privkey, all_peers.Peers, AES_key)
@@ -238,8 +242,8 @@ func Client_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 			return lib.ErrorBye
 		}
 	} else {
-		bye_err2 := Send_bye(conn, addr)
-		if bye_err2 != nil {
+		bye_err := Send_bye(conn, addr)
+		if bye_err != nil {
 			return lib.ErrorBye
 		}
 	}

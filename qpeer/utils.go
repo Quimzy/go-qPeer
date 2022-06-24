@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -786,4 +787,30 @@ func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers A
 	}
 
 	return nil
+}
+
+// ErrorHandling
+
+func openLogFile(path string) (*os.File, error) {
+	logFile, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return logFile, nil
+}
+
+func ErrorHandling(err error) {
+	errorFile, logfile_err := openLogFile("errors.log")
+	if logfile_err != nil {
+		log.Println("An error occured.. qPeer won't be able to log errors")
+		return
+	}
+
+	customLog := log.New(errorFile, "[ERROR]", log.LstdFlags|log.Lmicroseconds)
+
+	if errors.Is(err, ErrorJSON) {
+		customLog.Println(err)
+		return
+	}
+
 }

@@ -46,6 +46,16 @@ var ErrorWriteTempPeers = errors.New("qpeer: can't write temp_peers in db")
 
 var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers")
 
+//UDP errors
+var ErrorWriteUDP = errors.New("qpeer: can't send packet")
+
+var ErrorReadUDP = errors.New("qpeer: can't read packet")
+
+//TCP errors
+var ErrorWriteTCP = errors.New("qpeer: can't send packet")
+
+var ErrorReadTCP = errors.New("qpeer: can't read packet")
+
 //These errors are not organized
 
 var ErrorGreet = errors.New("qpeer: can't greet peer")

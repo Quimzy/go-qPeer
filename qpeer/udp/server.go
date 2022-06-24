@@ -11,19 +11,19 @@ import (
 func send_init(conn *net.UDPConn, addr *net.UDPAddr, init lib.Init) (string, error) { //Recv AES_key
 	jsonized_init, json_err := json.Marshal(init)
 	if json_err != nil {
-		return "", json_err
+		return "", lib.ErrorJSON
 	}
 
 	_, write_err := conn.WriteToUDP([]byte(jsonized_init), addr)
 	if write_err != nil {
-		return "", write_err
+		return "", lib.ErrorWriteUDP
 	}
 
 	buffer := make([]byte, 2048)
 
 	n, read_err := conn.Read(buffer)
 	if read_err != nil {
-		return "", read_err
+		return "", lib.ErrorReadUDP
 	}
 
 	return string(buffer[:n]), nil
@@ -35,32 +35,43 @@ func send_peerinfo_server(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer,
 	lpeerinfo.Endpoints = lpeer.Endpoints
 	lpeerinfo.RSA_Pubkey = pubkey_pem
 
-	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
+	kenc_lpeerinfo, kenc_peerinfo_err := lib.Kenc_peerinfo(lpeerinfo, AES_key)
+	if kenc_peerinfo_err != nil {
+		return "", kenc_peerinfo_err
+	}
 
 	_, write_err := conn.WriteToUDP([]byte(kenc_lpeerinfo), addr)
 	if write_err != nil {
-		return "", write_err
+		return "", lib.ErrorWriteUDP
 	}
 
 	buffer := make([]byte, 2048)
 
 	n, read_err := conn.Read(buffer)
 	if read_err != nil {
-		return "", read_err
+		return "", lib.ErrorReadUDP
 	}
 
 	return string(buffer[:n]), nil
 }
 
 func Server_setup(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string) error {
-	pubkey := lib.RSA_ImportPubkey(pubkey_pem)
+	pubkey, rsa_err := lib.RSA_ImportPubkey(pubkey_pem)
+	if rsa_err != nil {
+		return rsa_err
+	}
+
 	init := lib.Init_enc(lpeer.Peerid, pubkey_pem)
 
 	penc_AES_key, penc_err := send_init(conn, addr, init)
 	if penc_err != nil {
 		return lib.ErrorPenckey
 	}
-	AES_key := lib.Dpenc_AES(penc_AES_key, privkey)
+
+	AES_key, aes_err := lib.Dpenc_AES(penc_AES_key, privkey)
+	if aes_err != nil {
+		return aes_err
+	}
 
 	kenc_peerinfo, peerinfo_err := send_peerinfo_server(conn, addr, lpeer, pubkey_pem, AES_key)
 	if peerinfo_err != nil {
@@ -94,14 +105,14 @@ func send_kenc_verify(conn *net.UDPConn, addr *net.UDPAddr, verify_msg string, A
 
 	_, write_err := conn.WriteToUDP([]byte(kenc_verify), addr)
 	if write_err != nil {
-		return "", write_err
+		return "", lib.ErrorWriteUDP
 	}
 
 	buffer := make([]byte, 2048)
 
 	n, read_err := conn.Read(buffer)
 	if read_err != nil {
-		return "", write_err
+		return "", lib.ErrorWriteUDP
 	}
 
 	return string(buffer[:n]), nil
@@ -112,14 +123,14 @@ func send_temp_peers_server(conn *net.UDPConn, addr *net.UDPAddr, privkey *rsa.P
 
 	_, write_err := conn.WriteToUDP([]byte(enc_temp_peers), addr)
 	if write_err != nil {
-		return "", write_err
+		return "", lib.ErrorWriteUDP
 	}
 
 	buffer := make([]byte, 8192)
 
 	n, read_err := conn.Read(buffer)
 	if read_err != nil {
-		return "", read_err
+		return "", lib.ErrorReadUDP
 	}
 
 	return string(buffer[:n]), nil
@@ -159,7 +170,7 @@ func Server_ping(conn *net.UDPConn, addr *net.UDPAddr, lpeer lib.Lpeer) error {
 	peerid := lpeer.Peerid
 	_, write_err := conn.WriteToUDP([]byte(peerid), addr)
 	if write_err != nil {
-		return write_err
+		return lib.ErrorWriteUDP
 	}
 
 	return nil
