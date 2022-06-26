@@ -806,7 +806,7 @@ func ErrorHandling(err error) {
 		return
 	}
 
-	customLog := log.New(errorFile, "[ERROR]", log.LstdFlags|log.Lmicroseconds)
+	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
 	if errors.Is(err, ErrorJSON) {
 		customLog.Println(err)
