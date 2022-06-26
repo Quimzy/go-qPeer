@@ -2,20 +2,20 @@ package lib
 
 import "errors"
 
-// RSA errors
+//RSA errors
 var ErrorRSA = errors.New("qpeer: can't encrypt/decrypt rsa")
 
 var ErrorRSAPubKey = errors.New("qpeer: rsa public key is wrong")
 
-var ErrorRSAPrivKey = errors.New("qpeer: rsa private key is wrong")
+var ErrorRSAPrivKey = errors.New("qpeer: rsa private key is wrong") //handled
 
-var ErrorReadRSA = errors.New("qpeer: can't read from file")
+var ErrorReadRSA = errors.New("qpeer: can't read from file") //handled
 
-var ErrorWriteRSA = errors.New("qpeer: can't write to file")
+var ErrorWriteRSA = errors.New("qpeer: can't write to file") //handled
 
-var ErrorImportRSA = errors.New("qpeer: can't import rsa keys")
+var ErrorImportRSA = errors.New("qpeer: can't import rsa keys") //handled
 
-var ErrorExportRSA = errors.New("qpeer: can't export rsa keys")
+var ErrorExportRSA = errors.New("qpeer: can't export rsa keys") //handled
 
 //AES errors
 var ErrorAES = errors.New("qpeer: can't encrypt/decrypt aes")
@@ -23,19 +23,19 @@ var ErrorAES = errors.New("qpeer: can't encrypt/decrypt aes")
 var ErrorAESKey = errors.New("qpeer: aes key is wrong")
 
 //JSON errors
-var ErrorJSON = errors.New("qpeer: can't marshal/unmarshal json")
+var ErrorJSON = errors.New("qpeer: can't marshal/unmarshal json") //handled
 
 //Lpeer errors
-var ErrorReadLpeer = errors.New("qpeer: can't read peers from lpeer.json")
+var ErrorReadLpeer = errors.New("qpeer: can't read peers from lpeer.json") //handled
 
-var ErrorWriteLpeer = errors.New("qpeer: can't write lpeer to lpeer.json")
+var ErrorWriteLpeer = errors.New("qpeer: can't write lpeer to lpeer.json") //handled
 
 //Peers errors
 var ErrorPeerNotFound = errors.New("qpeer: peer not found in db")
 
-var ErrorReadPeers = errors.New("qpeer: can't read peers from db")
+var ErrorReadPeers = errors.New("qpeer: can't read peers from db") //handled
 
-var ErrorWritePeers = errors.New("qpeer: can't write peers to db")
+var ErrorWritePeers = errors.New("qpeer: can't write peers to db") //handled
 
 //Temp_peers errors
 var ErrorTempPeerNotFound = errors.New("qpeer: temp_peers not found in db")

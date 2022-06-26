@@ -808,9 +808,13 @@ func ErrorHandling(err error) {
 
 	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
-	if errors.Is(err, ErrorJSON) {
+	if errors.Is(err, ErrorJSON) { //normal errors logged to file
 		customLog.Println(err)
 		return
+	}
+
+	if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) { //critical error logged to file
+		customLog.Fatalln(err)
 	}
 
 }
