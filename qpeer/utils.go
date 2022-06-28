@@ -117,6 +117,7 @@ func Find_peer(peerid string, peers []Peer) (string, error) {
 	return "", ErrorPeerNotFound
 }
 
+/* not needed?
 func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 	for _, n_peer := range temp_peers {
 		if n_peer.Peerid == peerid {
@@ -128,8 +129,8 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 		}
 	}
 
-	return "", ErrorPeerNotFound
-}
+	return "", ErrorTempPeerNotFound
+}*/
 
 // Peer setup
 
@@ -698,7 +699,7 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) ([]Lpeer, error) {
 	return temp_peers, nil
 }
 
-func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer { //Share from temp_peers file
+func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer { //bootstrap share from temp_peers file
 	var temp_peers []Lpeer
 
 	if len(all_temp_peers) <= 5 {
@@ -808,13 +809,14 @@ func ErrorHandling(err error) {
 
 	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
-	if errors.Is(err, ErrorJSON) { //normal errors logged to file
+	if errors.Is(err, ErrorJSON) || errors.Is(err, ErrorRSA) || errors.Is(err, ErrorAES) { //normal errors logged to file
 		customLog.Println(err)
 		return
 	}
 
-	if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) { //critical error logged to file
+	if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadTempPeers) || errors.Is(err, ErrorWriteTempPeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) { //critical error logged to file
 		customLog.Fatalln(err)
 	}
 
+	//if errors.Is(err, ) connection & verification delete peer from db
 }

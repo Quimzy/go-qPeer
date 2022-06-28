@@ -300,3 +300,6 @@ func Client_getback(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.All_peer
 
 	return nil
 }
+
+//TODO: save peer to file after going through all steps
+//so if a problem occurs, peer A won't have all the peer info and still be as a temp_peer in peer B
