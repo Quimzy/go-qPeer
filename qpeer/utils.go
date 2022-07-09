@@ -282,9 +282,9 @@ func Write_lpeer(lpeer Lpeer) error {
 	return nil
 }
 
-func Set_lpeer(pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*net.UDPConn, Lpeer, error) {
+func Set_lpeer(peer_port, pubkey_pem, bootstrap_AES_key, signal_ip, signal_port string) (*net.UDPConn, Lpeer, error) {
 	//Setting Proto & Endpoints
-	conn, protocol, endpoints := SetProto(bootstrap_AES_key, signal_ip, signal_port)
+	conn, protocol, endpoints := SetProto(peer_port, bootstrap_AES_key, signal_ip, signal_port)
 
 	var lpeer Lpeer
 	if _, err := os.Stat("lpeer.json"); err == nil {

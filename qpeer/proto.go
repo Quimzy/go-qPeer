@@ -62,7 +62,7 @@ func IsPeeridValid(conn *net.UDPConn, peerid string, peerip string, port string)
 	return recvd_peerid == peerid
 }
 
-func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stun.Endpoints) {
+func SetProto(peer_port, AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stun.Endpoints) {
 	var conn *net.UDPConn
 	var proto string
 	var endpoints stun.Endpoints
@@ -70,16 +70,15 @@ func SetProto(AES_key, signal_ip, signal_port string) (*net.UDPConn, string, stu
 	//UDP
 
 	proto = "udp"
-	conn, endpoints = stun.Udp(AES_key, signal_ip, signal_port)
+	conn, endpoints = stun.Udp(peer_port, AES_key, signal_ip, signal_port)
 
 	if !IsUDPOnline(endpoints.PublicEndpoint.Ip, endpoints.PublicEndpoint.Port) {
 		//UPNP
 
 		conn = nil
 		proto = "upnp"
-		port := "1691"
 
-		endpoints.PublicEndpoint = upnp.OpenPort(port)
+		endpoints.PublicEndpoint = upnp.OpenPort(peer_port)
 		endpoints.PrivateEndpoint = endpoints.PublicEndpoint
 
 		if !IsOnline(endpoints.PublicEndpoint.Ip, endpoints.PublicEndpoint.Port) {
