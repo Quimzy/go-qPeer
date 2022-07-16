@@ -73,12 +73,23 @@ func RandomString(length int) string {
 	return string(s)
 }
 
-func Index(peers []Peer, peer Peer) int {
+func IndexPeers(peers []Peer, peer Peer) int {
 	for i, n_peer := range peers {
 		if n_peer == peer {
 			return i
 		}
 	}
+
+	return -1
+}
+
+func IndexTempPeers(temp_peers []Lpeer, temp_peer Lpeer) int {
+	for i, n_temp_peer := range temp_peers {
+		if n_temp_peer == temp_peer {
+			return i
+		}
+	}
+
 	return -1
 }
 
@@ -116,7 +127,6 @@ func Find_peer(peerid string, peers []Peer) (string, error) {
 	return "", ErrorPeerNotFound
 }
 
-/* not needed?
 func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 	for _, n_peer := range temp_peers {
 		if n_peer.Peerid == peerid {
@@ -129,7 +139,7 @@ func Find_temp_peer(peerid string, temp_peers []Lpeer) (string, error) {
 	}
 
 	return "", ErrorTempPeerNotFound
-}*/
+}
 
 // Peer setup
 
@@ -623,13 +633,12 @@ func Remove_peer(peerid string, all_peers All_peers) error {
 		var del_peer Peer
 
 		if jsonized_peer, err := Find_peer(peerid, all_peers.Peers); err == nil { //if peerid found
-			var peer Peer
-			json.Unmarshal([]byte(jsonized_peer), &peer)
+			json.Unmarshal([]byte(jsonized_peer), &del_peer)
 		} else {
 			return err
 		}
 
-		all_peers.Peers[Index(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
+		all_peers.Peers[IndexPeers(all_peers.Peers, del_peer)] = all_peers.Peers[len(all_peers.Peers)-1] //Remove peer from peers
 		all_peers.Peers = all_peers.Peers[:len(all_peers.Peers)-1]
 		all_peers.Offline_peers = append(all_peers.Offline_peers, del_peer) //Add peer to offline_peer
 
@@ -645,14 +654,14 @@ func Remove_peer(peerid string, all_peers All_peers) error {
 func Getback_peer(peerid string, all_peers All_peers) error {
 	if !Check_peer(peerid, all_peers.Peers) && Check_peer(peerid, all_peers.Offline_peers) {
 		var del_peer Peer
+
 		if jsonized_peer, err := Find_peer(peerid, all_peers.Peers); err == nil { //if peerid found
-			var peer Peer
-			json.Unmarshal([]byte(jsonized_peer), &peer)
+			json.Unmarshal([]byte(jsonized_peer), &del_peer)
 		} else {
 			return err
 		}
 
-		all_peers.Offline_peers[Index(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1] //Remove peer from offline_peer
+		all_peers.Offline_peers[IndexPeers(all_peers.Offline_peers, del_peer)] = all_peers.Offline_peers[len(all_peers.Offline_peers)-1] //Remove peer from offline_peer
 		all_peers.Offline_peers = all_peers.Offline_peers[:len(all_peers.Offline_peers)-1]
 		all_peers.Peers = append(all_peers.Offline_peers, del_peer) //Add peer to peers
 
@@ -740,6 +749,29 @@ func Read_temp_peers() ([]Lpeer, error) {
 	return temp_peers, nil
 }
 
+func Remove_temp_peer(peerid string, temp_peers []Lpeer) error {
+	if Check_temp_peers(peerid, temp_peers) {
+		var del_temp_peer Lpeer
+
+		if jsonized_temp_peer, err := Find_temp_peer(peerid, temp_peers); err == nil { //if peerid found
+			json.Unmarshal([]byte(jsonized_temp_peer), &del_temp_peer)
+		} else {
+			return err
+		}
+
+		temp_peers[IndexTempPeers(temp_peers, del_temp_peer)] = temp_peers[len(temp_peers)-1]
+		temp_peers = temp_peers[:len(temp_peers)-1]
+
+		write_err := Write_temp_peers(temp_peers)
+		if write_err != nil {
+			return write_err
+		}
+	} else {
+		return ErrorTempPeerNotFound
+	}
+
+	return nil
+}
 func Share_temp_peers(temp_peers []Lpeer, AES_key string) (string, error) {
 	jsonified_temp_peers, _ := json.Marshal(temp_peers)
 	kenc_temp_peers, aes_err := AES_encrypt(string(jsonified_temp_peers), AES_key)

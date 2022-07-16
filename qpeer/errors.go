@@ -42,40 +42,40 @@ var ErrorReadPeers = errors.New("qpeer: can't read peers from db") //handled
 var ErrorWritePeers = errors.New("qpeer: can't write peers to db") //handled
 
 //Temp_peers errors
-//var ErrorTempPeerNotFound = errors.New("qpeer: temp_peers not found in db") not needed?
+var ErrorTempPeerNotFound = errors.New("qpeer: temp_peers not found in db")
 
 var ErrorReadTempPeers = errors.New("qpeer: can't read temp_peers from db") //handled
 
 var ErrorWriteTempPeers = errors.New("qpeer: can't write temp_peers in db") //handled
 
-var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers")
+var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers") //handled
 
 //UDP errors
-var ErrorWriteUDP = errors.New("qpeer: can't send packet")
+var ErrorWriteUDP = errors.New("qpeer: can't send packet") //handled
 
-var ErrorReadUDP = errors.New("qpeer: can't read packet")
+var ErrorReadUDP = errors.New("qpeer: can't read packet") //handled
 
 //TCP errors
-var ErrorWriteTCP = errors.New("qpeer: can't send packet")
+var ErrorWriteTCP = errors.New("qpeer: can't send packet") //handled
 
-var ErrorReadTCP = errors.New("qpeer: can't read packet")
+var ErrorReadTCP = errors.New("qpeer: can't read packet") //handled
 
 //Verification errors
-var ErrorPeerid = errors.New("qpeer: peer's peerid doesn't match peer's public key")
+var ErrorPeerid = errors.New("qpeer: peer's peerid doesn't match peer's public key") //handled
 
-var ErrorSamePeerid = errors.New("qpeer: peer has the same peerid as lpeer")
+var ErrorSamePeerid = errors.New("qpeer: peer has the same peerid as lpeer") //handled
 
-var ErrorVerify = errors.New("qpeer: problem with AES_key verification")
+var ErrorVerify = errors.New("qpeer: problem with AES_key verification") //handled
 
 //These errors are not organized
 
-var ErrorGreet = errors.New("qpeer: can't greet peer")
+var ErrorGreet = errors.New("qpeer: can't greet peer") //handled
+
+var ErrorBye = errors.New("qpeer: peer did not send bye back") //handled
 
 var ErrorKencpeerinfo = errors.New("qpeer: can't get AES encrypted peerinfo")
 
-var ErrorKdecpeerinfo = errors.New("qpeer: can't decrypted AES encrypted peerinfo")
-
-var ErrorBye = errors.New("qpeer: peer did not send bye back")
+var ErrorKdecpeerinfo = errors.New("qpeer: can't decrypt AES encrypted peerinfo")
 
 var ErrorPenckey = errors.New("qpeer: can't read/use RSA encrypted AES key")
 
@@ -89,7 +89,7 @@ func openLogFile(path string) (*os.File, error) {
 	return logFile, nil
 }
 
-func ErrorHandling(err error) {
+func ErrorHandling(err error, peerid string, all_peers All_peers, temp_peers []Lpeer) {
 	errorFile, logfile_err := openLogFile("errors.log")
 	if logfile_err != nil {
 		log.Println("An error occured.. qPeer won't be able to log errors")
@@ -98,14 +98,24 @@ func ErrorHandling(err error) {
 
 	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
-	if errors.Is(err, ErrorJSON) || errors.Is(err, ErrorRSA) || errors.Is(err, ErrorAES) { //normal errors logged to file
-		customLog.Println(err)
-		return
-	}
+	for {
+		if err != nil {
+			if errors.Is(err, ErrorJSON) || errors.Is(err, ErrorRSA) || errors.Is(err, ErrorAES) {
+				customLog.Println(err)
+				return
+			} //normal errors logged to file
 
-	if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadTempPeers) || errors.Is(err, ErrorWriteTempPeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) { //critical error logged to file
-		customLog.Fatalln(err)
-	}
+			if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadTempPeers) || errors.Is(err, ErrorWriteTempPeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) || errors.Is(err, ErrorRSAPubKey) {
+				customLog.Fatalln(err)
+			} //critical error logged to file
 
-	//if errors.Is(err, ) connection & verification delete peer from db
+			if errors.Is(err, ErrorPeerid) || errors.Is(err, ErrorSamePeerid) || errors.Is(err, ErrorVerify) || errors.Is(err, ErrorGreet) || errors.Is(err, ErrorBye) || errors.Is(err, ErrorRcvTempPeers) || errors.Is(err, ErrorWriteTCP) || errors.Is(err, ErrorReadTCP) || errors.Is(err, ErrorWriteUDP) || errors.Is(err, ErrorReadUDP) {
+				if Check_peer(peerid, all_peers.Peers) {
+					err = Remove_peer(peerid, all_peers)
+				} else if Check_temp_peers(peerid, temp_peers) {
+					err = Remove_temp_peer(peerid, temp_peers)
+				}
+			} //connection & verification delete peer from db
+		}
+	}
 }
