@@ -707,7 +707,7 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) ([]Lpeer, error) {
 	return temp_peers, nil
 }
 
-func Return_temp_peers_bootstrap(privkey *rsa.PrivateKey, all_temp_peers []Lpeer) []Lpeer { //bootstrap share from temp_peers file
+func Return_temp_peers_bootstrap(all_temp_peers []Lpeer) []Lpeer { //bootstrap share from temp_peers file
 	var temp_peers []Lpeer
 
 	if len(all_temp_peers) <= 5 {
@@ -783,7 +783,7 @@ func Share_temp_peers(temp_peers []Lpeer, AES_key string) (string, error) {
 	return enc_temp_peers, nil
 }
 
-func Save_temp_peers(enc_temp_peers string, privkey *rsa.PrivateKey, all_peers All_peers, AES_key string, lpeer Lpeer) error {
+func Save_temp_peers(enc_temp_peers string, all_peers All_peers, AES_key string, lpeer Lpeer) error {
 	var recvd_temp_peers []Lpeer
 
 	b64dec_enc_temp_peers, _ := base64.StdEncoding.DecodeString(enc_temp_peers)
