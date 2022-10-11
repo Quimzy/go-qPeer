@@ -9,7 +9,7 @@ import (
 //RSA errors
 var ErrorRSA = errors.New("qpeer: can't encrypt/decrypt rsa") //handled
 
-var ErrorRSAPubKey = errors.New("qpeer: rsa public key is wrong")
+var ErrorRSAPubKey = errors.New("qpeer: rsa public key is wrong") //handled
 
 var ErrorRSAPrivKey = errors.New("qpeer: rsa private key is wrong") //handled
 
@@ -35,14 +35,14 @@ var ErrorReadLpeer = errors.New("qpeer: can't read peers from lpeer.json") //han
 var ErrorWriteLpeer = errors.New("qpeer: can't write lpeer to lpeer.json") //handled
 
 //Peers errors
-var ErrorPeerNotFound = errors.New("qpeer: peer not found in db")
+var ErrorPeerNotFound = errors.New("qpeer: peer not found in db") //handled
 
 var ErrorReadPeers = errors.New("qpeer: can't read peers from db") //handled
 
 var ErrorWritePeers = errors.New("qpeer: can't write peers to db") //handled
 
 //Temp_peers errors
-var ErrorTempPeerNotFound = errors.New("qpeer: temp_peers not found in db")
+var ErrorTempPeerNotFound = errors.New("qpeer: temp_peer not found in db") //handled
 
 var ErrorReadTempPeers = errors.New("qpeer: can't read temp_peers from db") //handled
 
@@ -73,11 +73,11 @@ var ErrorGreet = errors.New("qpeer: can't greet peer") //handled
 
 var ErrorBye = errors.New("qpeer: peer did not send bye back") //handled
 
-var ErrorKencpeerinfo = errors.New("qpeer: can't get AES encrypted peerinfo")
+var ErrorKencpeerinfo = errors.New("qpeer: can't get AES encrypted peerinfo") //should be handled in connection (quit connection)
 
-var ErrorKdecpeerinfo = errors.New("qpeer: can't decrypt AES encrypted peerinfo")
+var ErrorKdecpeerinfo = errors.New("qpeer: can't decrypt AES encrypted peerinfo") //should be handled in connection (quit connection)
 
-var ErrorPenckey = errors.New("qpeer: can't read/use RSA encrypted AES key")
+var ErrorPenckey = errors.New("qpeer: can't read/use RSA encrypted AES key") //should be handled in connection (quit connection)
 
 // ErrorHandling
 
@@ -99,23 +99,27 @@ func ErrorHandling(err error, peerid string, all_peers All_peers, temp_peers []L
 	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
 	for {
-		if err != nil {
-			if errors.Is(err, ErrorJSON) || errors.Is(err, ErrorRSA) || errors.Is(err, ErrorAES) {
-				customLog.Println(err)
-				return
-			} //normal errors logged to file
+		switch err{
+		case ErrorJSON || ErrorRSA || ErrorAES || ErrorTempPeerNotFound || ErrorPeerNotFound: //normal log printed to file
+			customLog.Println(err)
+			return
 
-			if errors.Is(err, ErrorReadLpeer) || errors.Is(err, ErrorWriteLpeer) || errors.Is(err, ErrorReadPeers) || errors.Is(err, ErrorWritePeers) || errors.Is(err, ErrorReadTempPeers) || errors.Is(err, ErrorWriteTempPeers) || errors.Is(err, ErrorReadRSA) || errors.Is(err, ErrorWriteRSA) || errors.Is(err, ErrorRSAPrivKey) || errors.Is(err, ErrorImportRSA) || errors.Is(err, ErrorExportRSA) || errors.Is(err, ErrorRSAPubKey) {
-				customLog.Fatalln(err)
-			} //critical error logged to file
+		case ErrorReadLpeer || ErrorWriteLpeer || ErrorReadPeers || ErrorWritePeers || ErrorReadTempPeers || ErrorWriteTempPeers || ErrorReadRSA || ErrorWriteRSA || ErrorRSAPrivKey || ErrorImportRSA || ErrorExportRSA || ErrorRSAPubKey: //critical error logged to file
+			customLog.Fatalln(err)	
 
-			if errors.Is(err, ErrorPeerid) || errors.Is(err, ErrorSamePeerid) || errors.Is(err, ErrorVerify) || errors.Is(err, ErrorGreet) || errors.Is(err, ErrorBye) || errors.Is(err, ErrorRcvTempPeers) || errors.Is(err, ErrorWriteTCP) || errors.Is(err, ErrorReadTCP) || errors.Is(err, ErrorWriteUDP) || errors.Is(err, ErrorReadUDP) {
-				if Check_peer(peerid, all_peers.Peers) {
-					err = Remove_peer(peerid, all_peers)
-				} else if Check_temp_peers(peerid, temp_peers) {
-					err = Remove_temp_peer(peerid, temp_peers)
-				}
-			} //connection & verification delete peer from db
+		case ErrorPeerid || ErrorSamePeerid || ErrorVerify || ErrorGreet || ErrorBye || ErrorRcvTempPeers || ErrorWriteTCP || ErrorReadTCP || ErrorWriteUDP || ErrorReadUDP: //connection & verification delete peer from db
+			if Check_peer(peerid, all_peers.Peers) {
+				err = Remove_peer(peerid, all_peers)
+			} else if Check_temp_peers(peerid, temp_peers) {
+				err = Remove_temp_peer(peerid, temp_peers)
+			}
+
+			return
+		
+		case nil:
+			return
 		}
+			
 	}
 }
+
