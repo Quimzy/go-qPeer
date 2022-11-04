@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	random "math/rand"
+	mathrand "math/rand"
 	"net"
 	"os"
 	"time"
@@ -64,11 +64,11 @@ func Md5_encrypt(msg string) string {
 }
 
 func RandomString(length int) string {
-	random.Seed(time.Now().UnixNano())
+	mathrand.Seed(time.Now().UnixNano())
 	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
 	s := make([]byte, 0, length)
 	for i := 0; i < length; i++ {
-		s = append(s, alphabet[random.Intn(len(alphabet))])
+		s = append(s, alphabet[mathrand.Intn(len(alphabet))])
 	}
 	return string(s)
 }
@@ -690,8 +690,8 @@ func Return_temp_peers(privkey *rsa.PrivateKey, peers []Peer) ([]Lpeer, error) {
 		}
 	} else {
 		for i := 1; i <= 5; i++ {
-			random.Seed(time.Now().UnixNano())
-			peer := peers[random.Intn(len(peers))]
+			mathrand.Seed(time.Now().UnixNano())
+			peer := peers[mathrand.Intn(len(peers))]
 			switch Check_temp_peers(peer.Peerid, temp_peers) {
 			case false:
 				temp_peer, temp_peer_err := Return_temp_peer(peer.Peerid, privkey, peers)
@@ -715,8 +715,8 @@ func Return_temp_peers_bootstrap(all_temp_peers []Lpeer) []Lpeer { //bootstrap s
 
 	} else {
 		for i := 1; i <= 5; i++ {
-			random.Seed(time.Now().UnixNano())
-			temp_peer := all_temp_peers[random.Intn(len(all_temp_peers))]
+			mathrand.Seed(time.Now().UnixNano())
+			temp_peer := all_temp_peers[mathrand.Intn(len(all_temp_peers))]
 			switch Check_temp_peers(temp_peer.Peerid, temp_peers) {
 			case false:
 				temp_peers = append(temp_peers, temp_peer)

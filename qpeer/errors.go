@@ -24,8 +24,6 @@ var ErrorExportRSA = errors.New("qpeer: can't export rsa keys") //handled
 //AES errors
 var ErrorAES = errors.New("qpeer: can't encrypt/decrypt aes") //handled
 
-var ErrorAESKey = errors.New("qpeer: aes key is wrong")
-
 //JSON errors
 var ErrorJSON = errors.New("qpeer: can't marshal/unmarshal json") //handled
 
@@ -98,28 +96,25 @@ func ErrorHandling(err error, peerid string, all_peers All_peers, temp_peers []L
 
 	customLog := log.New(errorFile, "[ERROR] ", log.LstdFlags|log.Lshortfile)
 
-	for {
-		switch err{
-		case ErrorJSON || ErrorRSA || ErrorAES || ErrorTempPeerNotFound || ErrorPeerNotFound: //normal log printed to file
+	for { //loop until err is nil
+		switch err {
+		case ErrorJSON, ErrorRSA, ErrorAES, ErrorTempPeerNotFound, ErrorPeerNotFound: //normal errors logged in file
 			customLog.Println(err)
 			return
 
-		case ErrorReadLpeer || ErrorWriteLpeer || ErrorReadPeers || ErrorWritePeers || ErrorReadTempPeers || ErrorWriteTempPeers || ErrorReadRSA || ErrorWriteRSA || ErrorRSAPrivKey || ErrorImportRSA || ErrorExportRSA || ErrorRSAPubKey: //critical error logged to file
-			customLog.Fatalln(err)	
+		case ErrorReadLpeer, ErrorWriteLpeer, ErrorReadPeers, ErrorWritePeers, ErrorReadTempPeers, ErrorWriteTempPeers, ErrorReadRSA, ErrorWriteRSA, ErrorRSAPrivKey, ErrorImportRSA, ErrorExportRSA, ErrorRSAPubKey: //critical error logged to file
+			customLog.Fatalln(err)
 
-		case ErrorPeerid || ErrorSamePeerid || ErrorVerify || ErrorGreet || ErrorBye || ErrorRcvTempPeers || ErrorWriteTCP || ErrorReadTCP || ErrorWriteUDP || ErrorReadUDP: //connection & verification delete peer from db
+		case ErrorPeerid, ErrorSamePeerid, ErrorVerify, ErrorGreet, ErrorBye, ErrorRcvTempPeers, ErrorWriteTCP, ErrorReadTCP, ErrorWriteUDP, ErrorReadUDP: //connection & verification errors => delete peer from db
 			if Check_peer(peerid, all_peers.Peers) {
 				err = Remove_peer(peerid, all_peers)
 			} else if Check_temp_peers(peerid, temp_peers) {
 				err = Remove_temp_peer(peerid, temp_peers)
 			}
 
-			return
-		
 		case nil:
 			return
 		}
-			
+
 	}
 }
-
