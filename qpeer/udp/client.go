@@ -231,7 +231,7 @@ func Client_exchange_peers(conn *net.UDPConn, addr *net.UDPAddr, all_peers lib.A
 		return lib.ErrorRcvTempPeers
 	}
 
-	save_temp_peers_err := lib.Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+	save_temp_peers_err := lib.Save_temp_peers(enc_temp_peers, all_peers, AES_key, lpeer)
 	if save_temp_peers_err != nil {
 		return save_temp_peers_err
 	}
