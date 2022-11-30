@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-//RSA errors
+// RSA errors
 var ErrorRSA = errors.New("qpeer: can't encrypt/decrypt rsa") //handled
 
 var ErrorRSAPubKey = errors.New("qpeer: rsa public key is wrong") //handled
@@ -21,25 +21,25 @@ var ErrorImportRSA = errors.New("qpeer: can't import rsa keys") //handled
 
 var ErrorExportRSA = errors.New("qpeer: can't export rsa keys") //handled
 
-//AES errors
+// AES errors
 var ErrorAES = errors.New("qpeer: can't encrypt/decrypt aes") //handled
 
-//JSON errors
+// JSON errors
 var ErrorJSON = errors.New("qpeer: can't marshal/unmarshal json") //handled
 
-//Lpeer errors
+// Lpeer errors
 var ErrorReadLpeer = errors.New("qpeer: can't read peers from lpeer.json") //handled
 
 var ErrorWriteLpeer = errors.New("qpeer: can't write lpeer to lpeer.json") //handled
 
-//Peers errors
+// Peers errors
 var ErrorPeerNotFound = errors.New("qpeer: peer not found in db") //handled
 
 var ErrorReadPeers = errors.New("qpeer: can't read peers from db") //handled
 
 var ErrorWritePeers = errors.New("qpeer: can't write peers to db") //handled
 
-//Temp_peers errors
+// Temp_peers errors
 var ErrorTempPeerNotFound = errors.New("qpeer: temp_peer not found in db") //handled
 
 var ErrorReadTempPeers = errors.New("qpeer: can't read temp_peers from db") //handled
@@ -48,17 +48,17 @@ var ErrorWriteTempPeers = errors.New("qpeer: can't write temp_peers in db") //ha
 
 var ErrorRcvTempPeers = errors.New("qpeer: didn't receive temp peers") //handled
 
-//UDP errors
+// UDP errors
 var ErrorWriteUDP = errors.New("qpeer: can't send packet") //handled
 
 var ErrorReadUDP = errors.New("qpeer: can't read packet") //handled
 
-//TCP errors
+// TCP errors
 var ErrorWriteTCP = errors.New("qpeer: can't send packet") //handled
 
 var ErrorReadTCP = errors.New("qpeer: can't read packet") //handled
 
-//Verification errors
+// Verification errors
 var ErrorPeerid = errors.New("qpeer: peer's peerid doesn't match peer's public key") //handled
 
 var ErrorSamePeerid = errors.New("qpeer: peer has the same peerid as lpeer") //handled

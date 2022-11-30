@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	mathrand "math/rand"
 	"net"
@@ -223,14 +222,14 @@ func RSA_Writekeys(keys RSA_Keys) error {
 	if err != nil {
 		return ErrorWriteRSA
 	}
-	_ = ioutil.WriteFile("keys.json", jsonified_keys, 0664)
+	_ = os.WriteFile("keys.json", jsonified_keys, 0664)
 
 	return nil
 }
 
 func RSA_Readkeys() (RSA_Keys, error) {
 	log.Println("Retrieving RSA_keys from keys.json")
-	reader, err := ioutil.ReadFile("keys.json")
+	reader, err := os.ReadFile("keys.json")
 	if err != nil {
 		return RSA_Keys{}, ErrorReadRSA
 	}
@@ -272,7 +271,7 @@ func Set_RSA_Keys() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 
 func Read_lpeer() (Lpeer, error) {
 	log.Println("Retrieving lpeer from lpeer.json")
-	reader, read_err := ioutil.ReadFile("lpeer.json")
+	reader, read_err := os.ReadFile("lpeer.json")
 	if read_err != nil {
 		return Lpeer{}, ErrorReadLpeer
 	}
@@ -288,7 +287,7 @@ func Write_lpeer(lpeer Lpeer) error {
 	if err != nil {
 		return ErrorWriteLpeer
 	}
-	_ = ioutil.WriteFile("lpeer.json", jsonified_lpeer, 0664)
+	_ = os.WriteFile("lpeer.json", jsonified_lpeer, 0664)
 	return nil
 }
 
@@ -566,12 +565,12 @@ func Write_peers(all_peers All_peers) error {
 		return ErrorWritePeers
 	}
 
-	_ = ioutil.WriteFile("peers.json", jsonified_peers, 0664)
+	_ = os.WriteFile("peers.json", jsonified_peers, 0664)
 	return nil
 }
 
 func Read_peers() (All_peers, error) {
-	reader, err := ioutil.ReadFile("peers.json")
+	reader, err := os.ReadFile("peers.json")
 	if err != nil {
 		return All_peers{}, ErrorReadPeers
 	}
@@ -733,12 +732,12 @@ func Write_temp_peers(temp_peers []Lpeer) error {
 		return ErrorWriteTempPeers
 	}
 
-	_ = ioutil.WriteFile("temp_peers", jsonified_temp_peers, 0664)
+	_ = os.WriteFile("temp_peers", jsonified_temp_peers, 0664)
 	return nil
 }
 
 func Read_temp_peers() ([]Lpeer, error) {
-	reader, err := ioutil.ReadFile("temp_peers")
+	reader, err := os.ReadFile("temp_peers")
 	if err != nil {
 		return []Lpeer{}, ErrorReadTempPeers
 	}
