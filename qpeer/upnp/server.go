@@ -35,7 +35,10 @@ func send_peerinfo_server(conn net.Conn, lpeer lib.Lpeer, pubkey_pem string, AES
 	lpeerinfo.Endpoints = lpeer.Endpoints
 	lpeerinfo.RSA_Pubkey = pubkey_pem
 
-	kenc_lpeerinfo := lib.Kenc_peerinfo(lpeerinfo, AES_key)
+	kenc_lpeerinfo, kenc_lpeerinfo_err := lib.Kenc_peerinfo(lpeerinfo, AES_key)
+	if kenc_lpeerinfo_err != nil {
+		return "", kenc_lpeerinfo_err
+	}
 
 	_, write_err := conn.Write([]byte(kenc_lpeerinfo))
 	if write_err != nil {
@@ -53,23 +56,39 @@ func send_peerinfo_server(conn net.Conn, lpeer lib.Lpeer, pubkey_pem string, AES
 }
 
 func Server_setup(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpeer, privkey *rsa.PrivateKey, pubkey_pem string, peerid string) error {
-	pubkey := lib.RSA_ImportPubkey(pubkey_pem)
+	pubkey, rsa_importing_err := lib.RSA_ImportPubkey(pubkey_pem)
+	if rsa_importing_err != nil {
+		return rsa_importing_err
+	}
+
 	init := lib.Init_enc(lpeer.Peerid, pubkey_pem)
 
 	penc_AES_key, penc_err := send_init(conn, init)
 	if penc_err != nil {
 		return lib.ErrorPenckey
 	}
-	AES_key := lib.Dpenc_AES(penc_AES_key, privkey)
+
+	AES_key, aes_err := lib.Dpenc_AES(penc_AES_key, privkey)
+	if aes_err != nil {
+		return aes_err
+	}
 
 	kenc_peerinfo, peerinfo_err := send_peerinfo_server(conn, lpeer, pubkey_pem, AES_key)
 	if peerinfo_err != nil {
 		return lib.ErrorKencpeerinfo
 	}
-	peerinfo := lib.Dkenc_peerinfo(kenc_peerinfo, AES_key)
+	peerinfo, peerinfo_err := lib.Dkenc_peerinfo(kenc_peerinfo, AES_key)
+	if peerinfo_err != nil {
+		return peerinfo_err
+	}
 
 	if lpeer.Peerid != peerid {
-		all_peers = lib.Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
+		var peers_err error
+		all_peers, peers_err = lib.Save_peer(peerid, peerinfo, AES_key, pubkey, all_peers)
+		if peers_err != nil {
+			return peers_err
+		}
+
 		lib.Write_peers(all_peers)
 	}
 
@@ -91,7 +110,10 @@ func Server_setup(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpeer, privk
 //Exchange peers
 
 func send_kenc_verify(conn net.Conn, verify_msg string, AES_key string) (string, error) {
-	kenc_verify := lib.Kenc_verify(verify_msg, AES_key)
+	kenc_verify, verify_err := lib.Kenc_verify(verify_msg, AES_key)
+	if verify_err != nil {
+		return "", verify_err
+	}
 
 	_, write_err := conn.Write([]byte(kenc_verify))
 	if write_err != nil {
@@ -109,7 +131,10 @@ func send_kenc_verify(conn net.Conn, verify_msg string, AES_key string) (string,
 }
 
 func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, temp_peers []lib.Lpeer, AES_key string) (string, error) {
-	enc_temp_peers := lib.Share_temp_peers(temp_peers, AES_key)
+	enc_temp_peers, temp_peers_err := lib.Share_temp_peers(temp_peers, AES_key)
+	if temp_peers_err != nil {
+		return "", temp_peers_err
+	}
 
 	_, write_err := conn.Write([]byte(enc_temp_peers))
 	if write_err != nil {
@@ -127,7 +152,10 @@ func send_temp_peers_server(conn net.Conn, privkey *rsa.PrivateKey, temp_peers [
 }
 
 func Server_exchange_peers(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpeer, temp_peers []lib.Lpeer, peerid string, privkey *rsa.PrivateKey) error {
-	peer := lib.Decrypt_peer(peerid, privkey, all_peers.Peers)
+	peer, peer_err := lib.Decrypt_peer(peerid, privkey, all_peers.Peers)
+	if peer_err != nil {
+		return peer_err
+	}
 	verify_msg := lib.RandomString(32)
 
 	dkenc_verify, verify_err := send_kenc_verify(conn, verify_msg, peer.AES_key)
@@ -135,7 +163,7 @@ func Server_exchange_peers(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpe
 		return lib.ErrorVerify
 	}
 
-	recvd, recvd_error := send_temp_peers_server(conn, privkey, lib.Return_temp_peers(privkey, all_peers.Peers), peer.AES_key)
+	recvd, recvd_error := send_temp_peers_server(conn, privkey, temp_peers, peer.AES_key)
 
 	if recvd_error != nil {
 		return lib.ErrorBye
@@ -143,7 +171,7 @@ func Server_exchange_peers(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpe
 
 	//TODO: check if recvd data is temp_peers
 	if recvd != "bye" {
-		lib.Save_temp_peers(recvd, privkey, all_peers, peer.AES_key, lpeer)
+		lib.Save_temp_peers(recvd, all_peers, peer.AES_key, lpeer)
 		bye_err := Send_bye(conn)
 		if bye_err != nil {
 			return lib.ErrorBye
@@ -163,11 +191,11 @@ func Server_bootstrap(conn net.Conn, all_peers lib.All_peers, lpeer lib.Lpeer, t
 		return lib.ErrorVerify
 	}
 
-	enc_temp_peers, temp_peers_error := send_temp_peers_server(conn, privkey, lib.Return_temp_peers_bootstrap(privkey, temp_peers), AES_key)
+	enc_temp_peers, temp_peers_error := send_temp_peers_server(conn, privkey, lib.Return_temp_peers_bootstrap(temp_peers), AES_key)
 	if temp_peers_error != nil {
 		return lib.ErrorRcvTempPeers
 	}
-	lib.Save_temp_peers(enc_temp_peers, privkey, all_peers, AES_key, lpeer)
+	lib.Save_temp_peers(enc_temp_peers, all_peers, AES_key, lpeer)
 
 	bye_err := Send_bye(conn)
 	if bye_err != nil {
